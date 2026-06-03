@@ -10,7 +10,7 @@ import { formatCurrency } from "@/lib/utils";
 export default async function AdminProductsPage() {
   const [session, products, categories, brands] = await Promise.all([
     requireAdmin(),
-    searchProducts({ sort: "newest" }),
+    searchProducts({ sort: "newest", status: "all" }),
     getAllCategories(),
     getAllBrands()
   ]);

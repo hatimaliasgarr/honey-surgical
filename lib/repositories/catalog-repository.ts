@@ -18,6 +18,7 @@ import type {
   Product,
   ProductFilters,
   ProductImage,
+  ProductStatus,
   ProductSpecification
 } from "@/lib/types/catalog";
 
@@ -39,6 +40,10 @@ type ProductRow = {
   category: Category;
   brand: Brand;
   product_images: ProductImage[];
+};
+
+type ProductSearchOptions = ProductFilters & {
+  status?: ProductStatus | "all";
 };
 
 function mapProduct(row: ProductRow): Product {
@@ -136,13 +141,16 @@ export async function getFeaturedProducts(): Promise<Product[]> {
   return error || !data ? getFallbackFeaturedProducts() : (data as unknown as ProductRow[]).map(mapProduct);
 }
 
-export async function searchProducts(filters: ProductFilters = {}): Promise<Product[]> {
+export async function searchProducts(filters: ProductSearchOptions = {}): Promise<Product[]> {
   const supabase = createSupabaseAdminClient();
   if (!supabase) {
     return fallbackSearchProducts(filters);
   }
 
-  let query = supabase.from("products").select(productSelect).eq("status", "active");
+  let query = supabase.from("products").select(productSelect);
+  if (filters.status !== "all") {
+    query = query.eq("status", filters.status || "active");
+  }
 
   if (filters.query) {
     query = query.textSearch("search_vector", filters.query, {
@@ -190,23 +198,38 @@ export async function searchProducts(filters: ProductFilters = {}): Promise<Prod
   }
 
   const { data, error } = await query.limit(200);
-  return error || !data ? fallbackSearchProducts(filters) : (data as unknown as ProductRow[]).map(mapProduct);
+  if (error || !data) {
+    return filters.status === "all" ? [] : fallbackSearchProducts(filters);
+  }
+
+  return (data as unknown as ProductRow[]).map(mapProduct);
 }
 
-export async function getProductBySlug(slug: string): Promise<Product | null> {
+export async function getProductBySlug(
+  slug: string,
+  options: { includeInactive?: boolean } = {}
+): Promise<Product | null> {
   const supabase = createSupabaseAdminClient();
   if (!supabase) {
     return getFallbackProductBySlug(slug);
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("products")
     .select(productSelect)
-    .eq("slug", slug)
-    .eq("status", "active")
-    .single();
+    .eq("slug", slug);
 
-  return error || !data ? getFallbackProductBySlug(slug) : mapProduct(data as unknown as ProductRow);
+  if (!options.includeInactive) {
+    query = query.eq("status", "active");
+  }
+
+  const { data, error } = await query.single();
+
+  if (error || !data) {
+    return options.includeInactive ? null : getFallbackProductBySlug(slug);
+  }
+
+  return mapProduct(data as unknown as ProductRow);
 }
 
 export async function getProductsBySlugs(slugs: string[]): Promise<Product[]> {

@@ -14,7 +14,7 @@ export default async function AdminProductEditPage({ params }: PageProps) {
     requireAdmin(),
     getAllCategories(),
     getAllBrands(),
-    getProductBySlug(slug)
+    getProductBySlug(slug, { includeInactive: true })
   ]);
 
   if (!product) {

@@ -1,47 +1,17 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { getAdminSession } from "@/lib/auth/admin";
+import {
+  getUniqueProductSlug,
+  normalizeProductPayload,
+  productSchema,
+  replaceProductImages
+} from "@/lib/admin/products";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { slugify } from "@/lib/utils";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
-
-const productSchema = z.object({
-  name: z.string().min(2),
-  sku: z.string().min(2),
-  categoryId: z.string().min(1),
-  brandId: z.string().min(1),
-  price: z.coerce.number().min(0).nullable().optional(),
-  shortDescription: z.string().min(5),
-  description: z.string().min(5),
-  specifications: z.string().optional(),
-  features: z.string().optional(),
-  keywords: z.string().optional(),
-  status: z.enum(["draft", "active", "archived"]).default("active"),
-  images: z.array(z.string()).default([])
-});
-
-function parseSpecifications(value?: string) {
-  if (!value) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function splitLines(value?: string) {
-  return (value || "")
-    .split(/\r?\n|,/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
 
 export async function PATCH(request: Request, context: RouteContext) {
   const session = await getAdminSession();
@@ -52,7 +22,12 @@ export async function PATCH(request: Request, context: RouteContext) {
   const { id } = await context.params;
   const parsed = productSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid product payload" }, { status: 400 });
+    return NextResponse.json({ error: "Please fill all required product fields." }, { status: 400 });
+  }
+
+  const normalized = normalizeProductPayload(parsed.data);
+  if (!normalized.ok) {
+    return NextResponse.json({ error: normalized.error }, { status: 400 });
   }
 
   const supabase = createSupabaseAdminClient();
@@ -61,42 +36,45 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const product = parsed.data;
-  const { error } = await supabase
+  const { data: existing, error: fetchError } = await supabase
+    .from("products")
+    .select("id,slug")
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !existing) {
+    return NextResponse.json({ error: fetchError?.message || "Product not found" }, { status: 404 });
+  }
+
+  const slug = await getUniqueProductSlug(supabase, product.name, id);
+  const { data, error } = await supabase
     .from("products")
     .update({
-      name: product.name,
-      slug: slugify(product.name),
-      sku: product.sku,
-      category_id: product.categoryId,
-      brand_id: product.brandId,
-      price: product.price || null,
-      short_description: product.shortDescription,
-      description: product.description,
-      specifications: parseSpecifications(product.specifications),
-      features: splitLines(product.features),
-      keywords: splitLines(product.keywords),
-      status: product.status,
+      ...normalized.record,
+      slug,
       updated_at: new Date().toISOString()
     })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id,slug")
+    .single();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error || !data) {
+    return NextResponse.json({ error: error?.message || "Could not update product" }, { status: 500 });
   }
 
-  await supabase.from("product_images").delete().eq("product_id", id);
-  if (product.images.length) {
-    await supabase.from("product_images").insert(
-      product.images.map((url, index) => ({
-        product_id: id,
-        url,
-        alt: product.name,
-        sort_order: index + 1
-      }))
-    );
+  const imageError = await replaceProductImages(supabase, id, product.name, normalized.imageUrls);
+  if (imageError) {
+    return NextResponse.json({ error: imageError }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  revalidatePath("/admin/products");
+  revalidatePath(`/admin/products/${existing.slug}`);
+  revalidatePath(`/admin/products/${data.slug}`);
+  revalidatePath("/products");
+  revalidatePath(`/products/${existing.slug}`);
+  revalidatePath(`/products/${data.slug}`);
+
+  return NextResponse.json({ ok: true, id: data.id, slug: data.slug });
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
@@ -115,6 +93,9 @@ export async function DELETE(_request: Request, context: RouteContext) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  revalidatePath("/admin/products");
+  revalidatePath("/products");
 
   return NextResponse.json({ ok: true });
 }
