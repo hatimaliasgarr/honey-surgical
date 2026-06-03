@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ImagePlus, Save, UploadCloud, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,9 +21,11 @@ export function ProductForm({
   brands: Brand[];
   product?: Product;
 }) {
+  const router = useRouter();
   const [images, setImages] = useState<string[]>(product?.images.map((image) => image.url) || []);
   const [state, setState] = useState<SaveState>("idle");
   const [message, setMessage] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   async function uploadFiles(files: FileList | File[]) {
     const items = Array.from(files);
@@ -30,48 +33,69 @@ export function ProductForm({
       return;
     }
 
+    setState("idle");
+    setUploading(true);
     setMessage("Preparing secure upload...");
-    const signatureResponse = await fetch("/api/admin/cloudinary/signature", { method: "POST" });
-    const signaturePayload = await signatureResponse.json();
 
-    if (!signatureResponse.ok || signaturePayload.mode === "demo") {
-      setImages((current) => [...current, ...items.map((file) => URL.createObjectURL(file))]);
-      setMessage("Preview images added. Configure Cloudinary env vars for permanent uploads.");
-      return;
-    }
+    try {
+      const signatureResponse = await fetch("/api/admin/cloudinary/signature", { method: "POST" });
+      const signaturePayload = await signatureResponse.json().catch(() => ({}));
 
-    const uploaded: string[] = [];
-    for (const file of items) {
-      const body = new FormData();
-      body.append("file", file);
-      body.append("api_key", signaturePayload.apiKey);
-      body.append("timestamp", signaturePayload.timestamp);
-      body.append("signature", signaturePayload.signature);
-      body.append("folder", signaturePayload.folder);
+      if (!signatureResponse.ok) {
+        throw new Error(signaturePayload.error || "Could not prepare the image upload.");
+      }
 
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${signaturePayload.cloudName}/image/upload`,
-        {
-          method: "POST",
-          body
+      if (signaturePayload.mode === "demo") {
+        throw new Error("Image upload is not configured. Add Cloudinary credentials to save product images.");
+      }
+
+      const uploaded: string[] = [];
+      for (const file of items) {
+        const body = new FormData();
+        body.append("file", file);
+        body.append("api_key", signaturePayload.apiKey);
+        body.append("timestamp", signaturePayload.timestamp);
+        body.append("signature", signaturePayload.signature);
+        body.append("folder", signaturePayload.folder);
+
+        const response = await fetch(
+          `https://api.cloudinary.com/v1_1/${signaturePayload.cloudName}/image/upload`,
+          {
+            method: "POST",
+            body
+          }
+        );
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload.secure_url) {
+          throw new Error(payload.error?.message || `Could not upload ${file.name}.`);
         }
-      );
-      const payload = await response.json();
-      if (payload.secure_url) {
+
         uploaded.push(payload.secure_url);
       }
-    }
 
-    setImages((current) => [...current, ...uploaded]);
-    setMessage(`${uploaded.length} image upload${uploaded.length === 1 ? "" : "s"} completed.`);
+      setImages((current) => [...current, ...uploaded]);
+      setMessage(`${uploaded.length} image upload${uploaded.length === 1 ? "" : "s"} completed.`);
+    } catch (error) {
+      setState("error");
+      setMessage(error instanceof Error ? error.message : "Image upload failed.");
+    } finally {
+      setUploading(false);
+    }
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (uploading) {
+      setState("error");
+      setMessage("Wait for image uploads to finish before saving.");
+      return;
+    }
+
+    const form = event.currentTarget;
     setState("saving");
     setMessage("");
 
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(form);
     const payload = {
       name: formData.get("name"),
       sku: formData.get("sku"),
@@ -87,14 +111,35 @@ export function ProductForm({
       images
     };
 
-    const response = await fetch(product ? `/api/admin/products/${product.id}` : "/api/admin/products", {
-      method: product ? "PATCH" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+    try {
+      const response = await fetch(product ? `/api/admin/products/${product.id}` : "/api/admin/products", {
+        method: product ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json().catch(() => ({}));
 
-    setState(response.ok ? "success" : "error");
-    setMessage(response.ok ? "Product saved." : "Product could not be saved.");
+      if (!response.ok) {
+        throw new Error(result.error || "Product could not be saved.");
+      }
+
+      setState("success");
+      setMessage(product ? "Product updated." : "Product saved.");
+
+      if (product) {
+        if (result.slug && result.slug !== product.slug) {
+          router.replace(`/admin/products/${result.slug}`);
+        }
+        router.refresh();
+      } else {
+        form.reset();
+        setImages([]);
+        router.refresh();
+      }
+    } catch (error) {
+      setState("error");
+      setMessage(error instanceof Error ? error.message : "Product could not be saved.");
+    }
   }
 
   return (
@@ -141,7 +186,7 @@ export function ProductForm({
         </div>
         <div className="grid gap-2">
           <Label htmlFor="price">Price</Label>
-          <Input id="price" name="price" type="number" min="0" step="1" defaultValue={product?.price || ""} />
+          <Input id="price" name="price" type="number" min="0" step="1" defaultValue={product?.price ?? ""} />
         </div>
       </div>
 
@@ -198,15 +243,20 @@ export function ProductForm({
           accept="image/*"
           multiple
           className="sr-only"
-          onChange={(event) => event.target.files && uploadFiles(event.target.files)}
+          onChange={(event) => {
+            if (event.target.files) {
+              uploadFiles(event.target.files);
+              event.target.value = "";
+            }
+          }}
         />
         {images.length ? (
           <div className="flex flex-wrap gap-2">
-            {images.map((image) => (
-              <span key={image} className="inline-flex items-center gap-2 rounded-md border border-border bg-white px-2 py-1 text-xs">
+            {images.map((image, index) => (
+              <span key={`${image}-${index}`} className="inline-flex items-center gap-2 rounded-md border border-border bg-white px-2 py-1 text-xs">
                 <ImagePlus className="size-4" aria-hidden="true" />
-                {image.startsWith("blob:") ? "Preview image" : image}
-                <button type="button" onClick={() => setImages((current) => current.filter((item) => item !== image))}>
+                {image}
+                <button type="button" onClick={() => setImages((current) => current.filter((_, itemIndex) => itemIndex !== index))}>
                   <X className="size-3" aria-hidden="true" />
                   <span className="sr-only">Remove image</span>
                 </button>
@@ -225,12 +275,12 @@ export function ProductForm({
         </Select>
       </div>
 
-      <Button type="submit" disabled={state === "saving"}>
+      <Button type="submit" disabled={state === "saving" || uploading}>
         <Save aria-hidden="true" />
-        {state === "saving" ? "Saving..." : product ? "Update Product" : "Save Product"}
+        {uploading ? "Uploading..." : state === "saving" ? "Saving..." : product ? "Update Product" : "Save Product"}
       </Button>
       {message ? (
-        <p className={state === "error" ? "text-sm text-destructive" : "text-sm text-muted-foreground"} role="status">
+        <p className={state === "error" ? "text-sm text-destructive" : "text-sm text-muted-foreground"} role={state === "error" ? "alert" : "status"}>
           {message}
         </p>
       ) : null}
