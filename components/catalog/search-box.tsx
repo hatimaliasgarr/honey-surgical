@@ -32,7 +32,8 @@ export function SearchBox({ products, large = false }: { products: Product[]; la
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    router.push(`/products${query ? `?q=${encodeURIComponent(query)}` : ""}`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    router.push(`/products${query ? `?q=${encodeURIComponent(query)}` : ""}` as any);
   }
 
   return (

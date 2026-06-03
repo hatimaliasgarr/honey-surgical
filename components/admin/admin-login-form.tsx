@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { LogIn, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -120,7 +121,7 @@ export function AdminLoginForm() {
         </form>
 
         <p className="mt-4 text-center text-xs text-muted-foreground/50">
-          <a href="/" className="hover:text-primary transition-colors">← Back to website</a>
+          <Link href="/" className="hover:text-primary transition-colors">← Back to website</Link>
         </p>
       </div>
     </div>

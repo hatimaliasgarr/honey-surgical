@@ -30,7 +30,8 @@ export function AdminShell({ session, children }: { session: AdminSession; child
               return (
                 <Link
                   key={item.href}
-                  href={item.href}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  href={item.href as any}
                   className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground focus-ring"
                 >
                   <Icon className="size-4" aria-hidden="true" />

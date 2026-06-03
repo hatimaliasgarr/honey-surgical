@@ -33,7 +33,8 @@ export function CompareLink() {
 
   return (
     <Button asChild variant="beige" size="sm">
-      <Link href={href}>
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      <Link href={href as any}>
         <Scale aria-hidden="true" />
         Compare {items.length ? `(${items.length})` : ""}
       </Link>
