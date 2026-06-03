@@ -2,9 +2,20 @@ import { AdminShell } from "@/components/admin/admin-shell";
 import { ProductActions } from "@/components/admin/product-actions";
 import { ProductForm } from "@/components/admin/product-form";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { requireAdmin } from "@/lib/auth/admin";
-import { getAllBrands, getAllCategories, searchProducts } from "@/lib/repositories/catalog-repository";
+import {
+  getAllBrands,
+  getAllCategories,
+  searchProducts,
+} from "@/lib/repositories/catalog-repository";
 import { formatCurrency } from "@/lib/utils";
 
 export default async function AdminProductsPage() {
@@ -12,15 +23,19 @@ export default async function AdminProductsPage() {
     requireAdmin(),
     searchProducts({ sort: "newest", status: "all" }),
     getAllCategories(),
-    getAllBrands()
+    getAllBrands(),
   ]);
 
   return (
     <AdminShell session={session}>
       <div className="grid gap-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-normal text-medical-deep">Product Management</h1>
-          <p className="mt-2 text-muted-foreground">Create, edit, archive, and manage product image uploads.</p>
+          <h1 className="text-3xl font-bold tracking-normal text-medical-deep">
+            Product Management
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            Create, edit, archive, and manage product image uploads.
+          </p>
         </div>
         <ProductForm categories={categories} brands={brands} />
         <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
@@ -41,16 +56,28 @@ export default async function AdminProductsPage() {
               <TableBody>
                 {products.map((product) => (
                   <TableRow key={product.id}>
-                    <TableCell className="font-medium">{product.name}</TableCell>
+                    <TableCell className="font-medium">
+                      {product.name}
+                    </TableCell>
                     <TableCell>{product.sku}</TableCell>
                     <TableCell>{product.category.name}</TableCell>
                     <TableCell>{product.brand.name}</TableCell>
                     <TableCell>{formatCurrency(product.price)}</TableCell>
                     <TableCell>
-                      <Badge variant={product.status === "active" ? "default" : "secondary"}>{product.status}</Badge>
+                      <Badge
+                        variant={
+                          product.status === "active" ? "default" : "secondary"
+                        }
+                      >
+                        {product.status}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <ProductActions productId={product.id} productSlug={product.slug} productName={product.name} />
+                      <ProductActions
+                        productId={product.id}
+                        productSlug={product.slug}
+                        productName={product.name}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

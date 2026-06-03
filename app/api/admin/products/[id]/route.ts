@@ -5,7 +5,7 @@ import {
   getUniqueProductSlug,
   normalizeProductPayload,
   productSchema,
-  replaceProductImages
+  replaceProductImages,
 } from "@/lib/admin/products";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -20,9 +20,14 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const { id } = await context.params;
-  const parsed = productSchema.safeParse(await request.json().catch(() => null));
+  const parsed = productSchema.safeParse(
+    await request.json().catch(() => null),
+  );
   if (!parsed.success) {
-    return NextResponse.json({ error: "Please fill all required product fields." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Please fill all required product fields." },
+      { status: 400 },
+    );
   }
 
   const normalized = normalizeProductPayload(parsed.data);
@@ -43,7 +48,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     .single();
 
   if (fetchError || !existing) {
-    return NextResponse.json({ error: fetchError?.message || "Product not found" }, { status: 404 });
+    return NextResponse.json(
+      { error: fetchError?.message || "Product not found" },
+      { status: 404 },
+    );
   }
 
   const slug = await getUniqueProductSlug(supabase, product.name, id);
@@ -52,17 +60,25 @@ export async function PATCH(request: Request, context: RouteContext) {
     .update({
       ...normalized.record,
       slug,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     })
     .eq("id", id)
     .select("id,slug")
     .single();
 
   if (error || !data) {
-    return NextResponse.json({ error: error?.message || "Could not update product" }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message || "Could not update product" },
+      { status: 500 },
+    );
   }
 
-  const imageError = await replaceProductImages(supabase, id, product.name, normalized.imageUrls);
+  const imageError = await replaceProductImages(
+    supabase,
+    id,
+    product.name,
+    normalized.imageUrls,
+  );
   if (imageError) {
     return NextResponse.json({ error: imageError }, { status: 500 });
   }

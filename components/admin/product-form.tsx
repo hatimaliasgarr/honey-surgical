@@ -15,14 +15,16 @@ type SaveState = "idle" | "saving" | "success" | "error";
 export function ProductForm({
   categories,
   brands,
-  product
+  product,
 }: {
   categories: Category[];
   brands: Brand[];
   product?: Product;
 }) {
   const router = useRouter();
-  const [images, setImages] = useState<string[]>(product?.images.map((image) => image.url) || []);
+  const [images, setImages] = useState<string[]>(
+    product?.images.map((image) => image.url) || [],
+  );
   const [state, setState] = useState<SaveState>("idle");
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -38,15 +40,21 @@ export function ProductForm({
     setMessage("Preparing secure upload...");
 
     try {
-      const signatureResponse = await fetch("/api/admin/cloudinary/signature", { method: "POST" });
+      const signatureResponse = await fetch("/api/admin/cloudinary/signature", {
+        method: "POST",
+      });
       const signaturePayload = await signatureResponse.json().catch(() => ({}));
 
       if (!signatureResponse.ok) {
-        throw new Error(signaturePayload.error || "Could not prepare the image upload.");
+        throw new Error(
+          signaturePayload.error || "Could not prepare the image upload.",
+        );
       }
 
       if (signaturePayload.mode === "demo") {
-        throw new Error("Image upload is not configured. Add Cloudinary credentials to save product images.");
+        throw new Error(
+          "Image upload is not configured. Add Cloudinary credentials to save product images.",
+        );
       }
 
       const uploaded: string[] = [];
@@ -62,22 +70,28 @@ export function ProductForm({
           `https://api.cloudinary.com/v1_1/${signaturePayload.cloudName}/image/upload`,
           {
             method: "POST",
-            body
-          }
+            body,
+          },
         );
         const payload = await response.json().catch(() => ({}));
         if (!response.ok || !payload.secure_url) {
-          throw new Error(payload.error?.message || `Could not upload ${file.name}.`);
+          throw new Error(
+            payload.error?.message || `Could not upload ${file.name}.`,
+          );
         }
 
         uploaded.push(payload.secure_url);
       }
 
       setImages((current) => [...current, ...uploaded]);
-      setMessage(`${uploaded.length} image upload${uploaded.length === 1 ? "" : "s"} completed.`);
+      setMessage(
+        `${uploaded.length} image upload${uploaded.length === 1 ? "" : "s"} completed.`,
+      );
     } catch (error) {
       setState("error");
-      setMessage(error instanceof Error ? error.message : "Image upload failed.");
+      setMessage(
+        error instanceof Error ? error.message : "Image upload failed.",
+      );
     } finally {
       setUploading(false);
     }
@@ -108,15 +122,18 @@ export function ProductForm({
       features: formData.get("features"),
       keywords: formData.get("keywords"),
       status: formData.get("status"),
-      images
+      images,
     };
 
     try {
-      const response = await fetch(product ? `/api/admin/products/${product.id}` : "/api/admin/products", {
-        method: product ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      const response = await fetch(
+        product ? `/api/admin/products/${product.id}` : "/api/admin/products",
+        {
+          method: product ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
       const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
@@ -138,15 +155,24 @@ export function ProductForm({
       }
     } catch (error) {
       setState("error");
-      setMessage(error instanceof Error ? error.message : "Product could not be saved.");
+      setMessage(
+        error instanceof Error ? error.message : "Product could not be saved.",
+      );
     }
   }
 
   return (
-    <form onSubmit={submit} className="grid gap-4 rounded-lg border border-border bg-white p-5 shadow-sm">
+    <form
+      onSubmit={submit}
+      className="grid gap-4 rounded-lg border border-border bg-white p-5 shadow-sm"
+    >
       <div>
-        <h2 className="text-xl font-semibold">{product ? "Edit Product" : "Add Product"}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Create catalog products with Cloudinary images and Supabase data.</p>
+        <h2 className="text-xl font-semibold">
+          {product ? "Edit Product" : "Add Product"}
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Create catalog products with Cloudinary images and Supabase data.
+        </p>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
@@ -163,7 +189,12 @@ export function ProductForm({
       <div className="grid gap-3 md:grid-cols-3">
         <div className="grid gap-2">
           <Label htmlFor="categoryId">Category</Label>
-          <Select id="categoryId" name="categoryId" required defaultValue={product?.category.id || ""}>
+          <Select
+            id="categoryId"
+            name="categoryId"
+            required
+            defaultValue={product?.category.id || ""}
+          >
             <option value="">Select category</option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
@@ -175,7 +206,12 @@ export function ProductForm({
         </div>
         <div className="grid gap-2">
           <Label htmlFor="brandId">Brand</Label>
-          <Select id="brandId" name="brandId" required defaultValue={product?.brand.id || ""}>
+          <Select
+            id="brandId"
+            name="brandId"
+            required
+            defaultValue={product?.brand.id || ""}
+          >
             <option value="">Select brand</option>
             {brands.map((brand) => (
               <option key={brand.id} value={brand.id}>
@@ -186,17 +222,34 @@ export function ProductForm({
         </div>
         <div className="grid gap-2">
           <Label htmlFor="price">Price</Label>
-          <Input id="price" name="price" type="number" min="0" step="1" defaultValue={product?.price ?? ""} />
+          <Input
+            id="price"
+            name="price"
+            type="number"
+            min="0"
+            step="1"
+            defaultValue={product?.price ?? ""}
+          />
         </div>
       </div>
 
       <div className="grid gap-2">
         <Label htmlFor="shortDescription">Short description</Label>
-        <Input id="shortDescription" name="shortDescription" required defaultValue={product?.shortDescription} />
+        <Input
+          id="shortDescription"
+          name="shortDescription"
+          required
+          defaultValue={product?.shortDescription}
+        />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="description">Description</Label>
-        <Textarea id="description" name="description" required defaultValue={product?.description} />
+        <Textarea
+          id="description"
+          name="description"
+          required
+          defaultValue={product?.description}
+        />
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
@@ -214,11 +267,21 @@ export function ProductForm({
         </div>
         <div className="grid gap-2">
           <Label htmlFor="features">Features</Label>
-          <Textarea id="features" name="features" placeholder="One feature per line" defaultValue={product?.features.join("\n")} />
+          <Textarea
+            id="features"
+            name="features"
+            placeholder="One feature per line"
+            defaultValue={product?.features.join("\n")}
+          />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="keywords">Keywords</Label>
-          <Textarea id="keywords" name="keywords" placeholder="gloves, sterile, disposable" defaultValue={product?.keywords.join(", ")} />
+          <Textarea
+            id="keywords"
+            name="keywords"
+            placeholder="gloves, sterile, disposable"
+            defaultValue={product?.keywords.join(", ")}
+          />
         </div>
       </div>
 
@@ -234,8 +297,12 @@ export function ProductForm({
           className="grid cursor-pointer place-items-center rounded-lg border border-dashed border-border bg-secondary p-6 text-center hover:bg-medical-pale"
         >
           <UploadCloud className="size-8 text-primary" aria-hidden="true" />
-          <span className="mt-2 text-sm font-medium">Upload single or multiple images</span>
-          <span className="text-xs text-muted-foreground">Drag and drop or choose files</span>
+          <span className="mt-2 text-sm font-medium">
+            Upload single or multiple images
+          </span>
+          <span className="text-xs text-muted-foreground">
+            Drag and drop or choose files
+          </span>
         </label>
         <Input
           id="images"
@@ -253,10 +320,20 @@ export function ProductForm({
         {images.length ? (
           <div className="flex flex-wrap gap-2">
             {images.map((image, index) => (
-              <span key={`${image}-${index}`} className="inline-flex items-center gap-2 rounded-md border border-border bg-white px-2 py-1 text-xs">
+              <span
+                key={`${image}-${index}`}
+                className="inline-flex items-center gap-2 rounded-md border border-border bg-white px-2 py-1 text-xs"
+              >
                 <ImagePlus className="size-4" aria-hidden="true" />
                 {image}
-                <button type="button" onClick={() => setImages((current) => current.filter((_, itemIndex) => itemIndex !== index))}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setImages((current) =>
+                      current.filter((_, itemIndex) => itemIndex !== index),
+                    )
+                  }
+                >
                   <X className="size-3" aria-hidden="true" />
                   <span className="sr-only">Remove image</span>
                 </button>
@@ -268,7 +345,11 @@ export function ProductForm({
 
       <div className="grid gap-2 md:w-56">
         <Label htmlFor="status">Status</Label>
-        <Select id="status" name="status" defaultValue={product?.status || "active"}>
+        <Select
+          id="status"
+          name="status"
+          defaultValue={product?.status || "active"}
+        >
           <option value="active">Active</option>
           <option value="draft">Draft</option>
           <option value="archived">Archived</option>
@@ -277,10 +358,23 @@ export function ProductForm({
 
       <Button type="submit" disabled={state === "saving" || uploading}>
         <Save aria-hidden="true" />
-        {uploading ? "Uploading..." : state === "saving" ? "Saving..." : product ? "Update Product" : "Save Product"}
+        {uploading
+          ? "Uploading..."
+          : state === "saving"
+            ? "Saving..."
+            : product
+              ? "Update Product"
+              : "Save Product"}
       </Button>
       {message ? (
-        <p className={state === "error" ? "text-sm text-destructive" : "text-sm text-muted-foreground"} role={state === "error" ? "alert" : "status"}>
+        <p
+          className={
+            state === "error"
+              ? "text-sm text-destructive"
+              : "text-sm text-muted-foreground"
+          }
+          role={state === "error" ? "alert" : "status"}
+        >
           {message}
         </p>
       ) : null}

@@ -7,7 +7,7 @@ import {
   getProductsBySlugs as getFallbackProductsBySlugs,
   getRelatedProducts as getFallbackRelatedProducts,
   products as fallbackProducts,
-  searchProducts as fallbackSearchProducts
+  searchProducts as fallbackSearchProducts,
 } from "@/lib/data/catalog";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type {
@@ -19,7 +19,7 @@ import type {
   ProductFilters,
   ProductImage,
   ProductStatus,
-  ProductSpecification
+  ProductSpecification,
 } from "@/lib/types/catalog";
 
 type ProductRow = {
@@ -64,7 +64,9 @@ function mapProduct(row: ProductRow): Product {
     viewCount: row.view_count || 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    images: (row.product_images || []).sort((a, b) => a.sortOrder - b.sortOrder)
+    images: (row.product_images || []).sort(
+      (a, b) => a.sortOrder - b.sortOrder,
+    ),
   };
 }
 
@@ -96,7 +98,9 @@ export async function getAllCategories(): Promise<Category[]> {
 
   const { data, error } = await supabase
     .from("categories")
-    .select("id,name,slug,description,imageUrl:image_url,parentId:parent_id,sortOrder:sort_order")
+    .select(
+      "id,name,slug,description,imageUrl:image_url,parentId:parent_id,sortOrder:sort_order",
+    )
     .order("sort_order");
 
   if (error || !data) {
@@ -121,7 +125,10 @@ export async function getAllBrands(): Promise<Brand[]> {
     return fallbackBrands;
   }
 
-  const { data, error } = await supabase.from("brands").select("id,name,slug").order("name");
+  const { data, error } = await supabase
+    .from("brands")
+    .select("id,name,slug")
+    .order("name");
   return error || !data ? fallbackBrands : (data as Brand[]);
 }
 
@@ -138,10 +145,14 @@ export async function getFeaturedProducts(): Promise<Product[]> {
     .order("view_count", { ascending: false })
     .limit(8);
 
-  return error || !data ? getFallbackFeaturedProducts() : (data as unknown as ProductRow[]).map(mapProduct);
+  return error || !data
+    ? getFallbackFeaturedProducts()
+    : (data as unknown as ProductRow[]).map(mapProduct);
 }
 
-export async function searchProducts(filters: ProductSearchOptions = {}): Promise<Product[]> {
+export async function searchProducts(
+  filters: ProductSearchOptions = {},
+): Promise<Product[]> {
   const supabase = createSupabaseAdminClient();
   if (!supabase) {
     return fallbackSearchProducts(filters);
@@ -155,13 +166,15 @@ export async function searchProducts(filters: ProductSearchOptions = {}): Promis
   if (filters.query) {
     query = query.textSearch("search_vector", filters.query, {
       type: "websearch",
-      config: "english"
+      config: "english",
     });
   }
 
   if (filters.category) {
     const allCategories = await getAllCategories();
-    const category = allCategories.find((item) => item.slug === filters.category);
+    const category = allCategories.find(
+      (item) => item.slug === filters.category,
+    );
     const childIds = allCategories
       .filter((item) => item.parentId === category?.id)
       .map((item) => item.id);
@@ -207,17 +220,14 @@ export async function searchProducts(filters: ProductSearchOptions = {}): Promis
 
 export async function getProductBySlug(
   slug: string,
-  options: { includeInactive?: boolean } = {}
+  options: { includeInactive?: boolean } = {},
 ): Promise<Product | null> {
   const supabase = createSupabaseAdminClient();
   if (!supabase) {
     return getFallbackProductBySlug(slug);
   }
 
-  let query = supabase
-    .from("products")
-    .select(productSelect)
-    .eq("slug", slug);
+  let query = supabase.from("products").select(productSelect).eq("slug", slug);
 
   if (!options.includeInactive) {
     query = query.eq("status", "active");
@@ -244,7 +254,9 @@ export async function getProductsBySlugs(slugs: string[]): Promise<Product[]> {
     .in("slug", slugs)
     .eq("status", "active");
 
-  return error || !data ? getFallbackProductsBySlugs(slugs) : (data as unknown as ProductRow[]).map(mapProduct);
+  return error || !data
+    ? getFallbackProductsBySlugs(slugs)
+    : (data as unknown as ProductRow[]).map(mapProduct);
 }
 
 export async function getRelatedProducts(product: Product): Promise<Product[]> {
@@ -261,7 +273,9 @@ export async function getRelatedProducts(product: Product): Promise<Product[]> {
     .eq("status", "active")
     .limit(4);
 
-  return error || !data ? getFallbackRelatedProducts(product) : (data as unknown as ProductRow[]).map(mapProduct);
+  return error || !data
+    ? getFallbackRelatedProducts(product)
+    : (data as unknown as ProductRow[]).map(mapProduct);
 }
 
 export async function getDashboardMetrics(): Promise<DashboardMetrics> {
@@ -275,29 +289,30 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
       searchTrends: [
         { query: "oxygen concentrator", count: 42 },
         { query: "nitrile gloves", count: 38 },
-        { query: "icu bed", count: 29 }
+        { query: "icu bed", count: 29 },
       ],
       inquiryTrends: [
         { date: "Mon", count: 6 },
         { date: "Tue", count: 9 },
         { date: "Wed", count: 12 },
         { date: "Thu", count: 8 },
-        { date: "Fri", count: 14 }
+        { date: "Fri", count: 14 },
       ],
       categoryPopularity: [
         { category: "Medical Equipment", views: 1920 },
         { category: "Disposable Products", views: 1740 },
-        { category: "Hospital Furniture", views: 1220 }
-      ]
+        { category: "Hospital Furniture", views: 1220 },
+      ],
     };
   }
 
-  const [productCount, categoryCount, inquiryCount, products] = await Promise.all([
-    supabase.from("products").select("id", { count: "exact", head: true }),
-    supabase.from("categories").select("id", { count: "exact", head: true }),
-    supabase.from("inquiries").select("id", { count: "exact", head: true }),
-    getFeaturedProducts()
-  ]);
+  const [productCount, categoryCount, inquiryCount, products] =
+    await Promise.all([
+      supabase.from("products").select("id", { count: "exact", head: true }),
+      supabase.from("categories").select("id", { count: "exact", head: true }),
+      supabase.from("inquiries").select("id", { count: "exact", head: true }),
+      getFeaturedProducts(),
+    ]);
 
   return {
     totalProducts: productCount.count || 0,
@@ -307,20 +322,20 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     searchTrends: [
       { query: "oxygen concentrator", count: 42 },
       { query: "nitrile gloves", count: 38 },
-      { query: "icu bed", count: 29 }
+      { query: "icu bed", count: 29 },
     ],
     inquiryTrends: [
       { date: "Mon", count: 6 },
       { date: "Tue", count: 9 },
       { date: "Wed", count: 12 },
       { date: "Thu", count: 8 },
-      { date: "Fri", count: 14 }
+      { date: "Fri", count: 14 },
     ],
     categoryPopularity: [
       { category: "Medical Equipment", views: 1920 },
       { category: "Disposable Products", views: 1740 },
-      { category: "Hospital Furniture", views: 1220 }
-    ]
+      { category: "Hospital Furniture", views: 1220 },
+    ],
   };
 }
 
@@ -333,7 +348,7 @@ export async function getRecentInquiries(): Promise<Inquiry[]> {
   const { data, error } = await supabase
     .from("inquiries")
     .select(
-      "id,customerName:customer_name,email,phone,productId:product_id,productName:product_name,message,status,createdAt:created_at"
+      "id,customerName:customer_name,email,phone,productId:product_id,productName:product_name,message,status,createdAt:created_at",
     )
     .order("created_at", { ascending: false })
     .limit(50);

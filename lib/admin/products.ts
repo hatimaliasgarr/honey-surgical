@@ -24,7 +24,7 @@ export const productSchema = z.object({
   features: z.string().optional(),
   keywords: z.string().optional(),
   status: z.enum(productStatusValues).default("active"),
-  images: z.array(z.string()).default([])
+  images: z.array(z.string()).default([]),
 });
 
 export type ProductPayload = z.infer<typeof productSchema>;
@@ -66,7 +66,12 @@ export function sanitizeImageUrls(images: string[]) {
   return images
     .map((image) => image.trim())
     .filter((image) => image && !image.startsWith("blob:"))
-    .filter((image) => image.startsWith("http://") || image.startsWith("https://") || image.startsWith("/"));
+    .filter(
+      (image) =>
+        image.startsWith("http://") ||
+        image.startsWith("https://") ||
+        image.startsWith("/"),
+    );
 }
 
 export function parseSpecifications(value?: string) {
@@ -78,13 +83,16 @@ export function parseSpecifications(value?: string) {
   try {
     const parsed = JSON.parse(text);
     if (!Array.isArray(parsed)) {
-      return { ok: false as const, error: "Specifications must be a JSON array." };
+      return {
+        ok: false as const,
+        error: "Specifications must be a JSON array.",
+      };
     }
 
     const specifications = parsed
       .map((item) => ({
         label: String(item?.label || "").trim(),
-        value: String(item?.value || "").trim()
+        value: String(item?.value || "").trim(),
       }))
       .filter((item) => item.label && item.value);
 
@@ -94,7 +102,9 @@ export function parseSpecifications(value?: string) {
   }
 }
 
-export function normalizeProductPayload(product: ProductPayload): NormalizedProduct {
+export function normalizeProductPayload(
+  product: ProductPayload,
+): NormalizedProduct {
   const specifications = parseSpecifications(product.specifications);
   if (!specifications.ok) {
     return specifications;
@@ -113,9 +123,9 @@ export function normalizeProductPayload(product: ProductPayload): NormalizedProd
       specifications: specifications.value,
       features: splitList(product.features),
       keywords: splitList(product.keywords),
-      status: product.status
+      status: product.status,
     },
-    imageUrls: sanitizeImageUrls(product.images)
+    imageUrls: sanitizeImageUrls(product.images),
   };
 }
 
@@ -128,7 +138,7 @@ export function normalizeStatus(value: string) {
 export async function getUniqueProductSlug(
   supabase: SupabaseClient,
   name: string,
-  excludeProductId?: string
+  excludeProductId?: string,
 ) {
   const baseSlug = slugify(name) || `product-${Date.now()}`;
   const { data, error } = await supabase
@@ -143,7 +153,7 @@ export async function getUniqueProductSlug(
   const taken = new Set(
     (data as { id: string; slug: string }[])
       .filter((row) => row.id !== excludeProductId)
-      .map((row) => row.slug)
+      .map((row) => row.slug),
   );
 
   if (!taken.has(baseSlug)) {
@@ -162,7 +172,7 @@ export async function replaceProductImages(
   supabase: SupabaseClient,
   productId: string,
   productName: string,
-  imageUrls: string[]
+  imageUrls: string[],
 ) {
   const { error: deleteError } = await supabase
     .from("product_images")
@@ -182,8 +192,8 @@ export async function replaceProductImages(
       product_id: productId,
       url,
       alt: productName,
-      sort_order: index + 1
-    }))
+      sort_order: index + 1,
+    })),
   );
 
   return insertError?.message || null;

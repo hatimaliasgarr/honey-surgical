@@ -2,7 +2,11 @@ import { notFound } from "next/navigation";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { ProductForm } from "@/components/admin/product-form";
 import { requireAdmin } from "@/lib/auth/admin";
-import { getAllBrands, getAllCategories, getProductBySlug } from "@/lib/repositories/catalog-repository";
+import {
+  getAllBrands,
+  getAllCategories,
+  getProductBySlug,
+} from "@/lib/repositories/catalog-repository";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -14,7 +18,7 @@ export default async function AdminProductEditPage({ params }: PageProps) {
     requireAdmin(),
     getAllCategories(),
     getAllBrands(),
-    getProductBySlug(slug, { includeInactive: true })
+    getProductBySlug(slug, { includeInactive: true }),
   ]);
 
   if (!product) {

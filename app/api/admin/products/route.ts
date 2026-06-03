@@ -5,7 +5,7 @@ import {
   getUniqueProductSlug,
   normalizeProductPayload,
   productSchema,
-  replaceProductImages
+  replaceProductImages,
 } from "@/lib/admin/products";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -15,9 +15,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const parsed = productSchema.safeParse(await request.json().catch(() => null));
+  const parsed = productSchema.safeParse(
+    await request.json().catch(() => null),
+  );
   if (!parsed.success) {
-    return NextResponse.json({ error: "Please fill all required product fields." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Please fill all required product fields." },
+      { status: 400 },
+    );
   }
 
   const normalized = normalizeProductPayload(parsed.data);
@@ -36,16 +41,24 @@ export async function POST(request: Request) {
     .from("products")
     .insert({
       ...normalized.record,
-      slug
+      slug,
     })
     .select("id,name,slug")
     .single();
 
   if (error || !data) {
-    return NextResponse.json({ error: error?.message || "Could not create product" }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message || "Could not create product" },
+      { status: 500 },
+    );
   }
 
-  const imageError = await replaceProductImages(supabase, data.id, product.name, normalized.imageUrls);
+  const imageError = await replaceProductImages(
+    supabase,
+    data.id,
+    product.name,
+    normalized.imageUrls,
+  );
   if (imageError) {
     return NextResponse.json({ error: imageError }, { status: 500 });
   }
