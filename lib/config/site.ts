@@ -8,7 +8,7 @@ export const siteConfig = {
   address: "HONEY SURGICALS, Medical Market, India",
   whatsapp: "9301232196",
   mapsUrl:
-    "https://www.google.com/maps/search/?api=1&query=HONEY%20SURGICALS%20medical%20supplier"
+    "https://www.google.com/maps/place/HONEY+SURGICAL/@21.2423919,81.6298221,17z"
 };
 
 export const primaryNav = [
