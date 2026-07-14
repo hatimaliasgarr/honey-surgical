@@ -23,7 +23,7 @@ import type {
   ProductFilters,
   ProductStatus,
 } from "@/lib/types/catalog";
-import { FilterQuery } from "mongoose";
+import mongoose from "mongoose";
 
 type ProductSearchOptions = ProductFilters & {
   status?: ProductStatus | "all";
@@ -105,7 +105,7 @@ export async function searchProducts(
   try {
     await connectToDatabase();
     
-    let query: FilterQuery<any> = {};
+    let query: Record<string, any> = {};
 
     if (filters.status !== "all") {
       query.status = filters.status || "active";
