@@ -1,6 +1,8 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { slugify } from "@/lib/utils";
+import connectToDatabase from "@/lib/db/mongodb";
+import { Product as ProductModel } from "@/lib/models/Product";
+import mongoose from "mongoose";
 
 export const productStatusValues = ["draft", "active", "archived"] as const;
 
@@ -33,22 +35,22 @@ export type ProductRecord = {
   name: string;
   slug: string;
   sku: string;
-  category_id: string;
-  brand_id: string;
+  category: mongoose.Types.ObjectId;
+  brand: mongoose.Types.ObjectId;
   price: number | null;
-  short_description: string;
+  shortDescription: string;
   description: string;
   specifications: { label: string; value: string }[];
   features: string[];
   keywords: string[];
   status: ProductPayload["status"];
+  images: { id: string; url: string; alt: string; sortOrder: number }[];
 };
 
 type NormalizedProduct =
   | {
       ok: true;
       record: Omit<ProductRecord, "slug">;
-      imageUrls: string[];
     }
   | {
       ok: false;
@@ -110,22 +112,30 @@ export function normalizeProductPayload(
     return specifications;
   }
 
+  const imageUrls = sanitizeImageUrls(product.images);
+  const images = imageUrls.map((url, index) => ({
+    id: `img_${Date.now()}_${index}`, // Generate simple IDs for Cloudinary fallback
+    url,
+    alt: product.name,
+    sortOrder: index + 1,
+  }));
+
   return {
     ok: true,
     record: {
       name: product.name,
       sku: product.sku,
-      category_id: product.categoryId,
-      brand_id: product.brandId,
+      category: new mongoose.Types.ObjectId(product.categoryId),
+      brand: new mongoose.Types.ObjectId(product.brandId),
       price: product.price,
-      short_description: product.shortDescription,
+      shortDescription: product.shortDescription,
       description: product.description,
       specifications: specifications.value,
       features: splitList(product.features),
       keywords: splitList(product.keywords),
       status: product.status,
-    },
-    imageUrls: sanitizeImageUrls(product.images),
+      images,
+    }
   };
 }
 
@@ -136,25 +146,24 @@ export function normalizeStatus(value: string) {
 }
 
 export async function getUniqueProductSlug(
-  supabase: SupabaseClient,
   name: string,
   excludeProductId?: string,
 ) {
+  await connectToDatabase();
   const baseSlug = slugify(name) || `product-${Date.now()}`;
-  const { data, error } = await supabase
-    .from("products")
-    .select("id,slug")
-    .like("slug", `${baseSlug}%`);
+  
+  const query: any = { slug: { $regex: `^${baseSlug}` } };
+  if (excludeProductId) {
+    query._id = { $ne: new mongoose.Types.ObjectId(excludeProductId) };
+  }
 
-  if (error || !data) {
+  const products = await ProductModel.find(query).select("slug").lean();
+  
+  if (!products.length) {
     return baseSlug;
   }
 
-  const taken = new Set(
-    (data as { id: string; slug: string }[])
-      .filter((row) => row.id !== excludeProductId)
-      .map((row) => row.slug),
-  );
+  const taken = new Set(products.map((p: any) => p.slug));
 
   if (!taken.has(baseSlug)) {
     return baseSlug;
@@ -166,35 +175,4 @@ export async function getUniqueProductSlug(
   }
 
   return `${baseSlug}-${suffix}`;
-}
-
-export async function replaceProductImages(
-  supabase: SupabaseClient,
-  productId: string,
-  productName: string,
-  imageUrls: string[],
-) {
-  const { error: deleteError } = await supabase
-    .from("product_images")
-    .delete()
-    .eq("product_id", productId);
-
-  if (deleteError) {
-    return deleteError.message;
-  }
-
-  if (!imageUrls.length) {
-    return null;
-  }
-
-  const { error: insertError } = await supabase.from("product_images").insert(
-    imageUrls.map((url, index) => ({
-      product_id: productId,
-      url,
-      alt: productName,
-      sort_order: index + 1,
-    })),
-  );
-
-  return insertError?.message || null;
 }

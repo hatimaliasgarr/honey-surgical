@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAdminSession } from "@/lib/auth/admin";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import connectToDatabase from "@/lib/db/mongodb";
+import { Inquiry as InquiryModel } from "@/lib/models/Inquiry";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -22,16 +23,22 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  const supabase = createSupabaseAdminClient();
-  if (!supabase) {
+  if (session.demo) {
     return NextResponse.json({ ok: true, mode: "demo" });
   }
 
-  const { id } = await context.params;
-  const { error } = await supabase.from("inquiries").update({ status: parsed.data.status }).eq("id", id);
-  if (error) {
+  try {
+    const { id } = await context.params;
+    await connectToDatabase();
+    
+    const updated = await InquiryModel.findByIdAndUpdate(id, { status: parsed.data.status });
+    
+    if (!updated) {
+       return NextResponse.json({ error: "Inquiry not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  return NextResponse.json({ ok: true });
 }

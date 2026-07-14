@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAdminSession } from "@/lib/auth/admin";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import connectToDatabase from "@/lib/db/mongodb";
+import { Category as CategoryModel } from "@/lib/models/Category";
 import { slugify } from "@/lib/utils";
+import mongoose from "mongoose";
 
 const categorySchema = z.object({
   name: z.string().min(2),
@@ -23,24 +25,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid category payload" }, { status: 400 });
   }
 
-  const supabase = createSupabaseAdminClient();
-  if (!supabase) {
+  if (session.demo) {
     return NextResponse.json({ ok: true, mode: "demo" });
   }
 
-  const category = parsed.data;
-  const { error } = await supabase.from("categories").insert({
-    name: category.name,
-    slug: slugify(category.name),
-    parent_id: category.parentId || null,
-    description: category.description,
-    image_url: category.imageUrl || null,
-    sort_order: category.sortOrder
-  });
+  try {
+    await connectToDatabase();
+    
+    const category = parsed.data;
+    await CategoryModel.create({
+      name: category.name,
+      slug: slugify(category.name),
+      parentId: category.parentId ? new mongoose.Types.ObjectId(category.parentId) : null,
+      description: category.description,
+      imageUrl: category.imageUrl || "",
+      sortOrder: category.sortOrder
+    });
 
-  if (error) {
+    return NextResponse.json({ ok: true });
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  return NextResponse.json({ ok: true });
 }

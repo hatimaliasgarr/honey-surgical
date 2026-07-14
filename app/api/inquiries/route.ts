@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import connectToDatabase from "@/lib/db/mongodb";
+import { Inquiry as InquiryModel } from "@/lib/models/Inquiry";
+import mongoose from "mongoose";
 
 const inquirySchema = z.object({
   customerName: z.string().min(2),
@@ -19,29 +21,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid inquiry payload" }, { status: 400 });
   }
 
-  const supabase = createSupabaseAdminClient();
-
-  if (!supabase) {
-    return NextResponse.json({
-      ok: true,
-      mode: "demo",
-      message: "Inquiry accepted locally. Configure Supabase env vars to persist inquiries."
+  try {
+    await connectToDatabase();
+    
+    await InquiryModel.create({
+      customerName: parsed.data.customerName,
+      email: parsed.data.email,
+      phone: parsed.data.phone,
+      productId: parsed.data.productId ? new mongoose.Types.ObjectId(parsed.data.productId) : null,
+      productName: parsed.data.productName || null,
+      message: parsed.data.message,
+      status: "new"
     });
-  }
 
-  const { error } = await supabase.from("inquiries").insert({
-    customer_name: parsed.data.customerName,
-    email: parsed.data.email,
-    phone: parsed.data.phone,
-    product_id: parsed.data.productId,
-    product_name: parsed.data.productName,
-    message: parsed.data.message,
-    status: "new"
-  });
-
-  if (error) {
+    return NextResponse.json({ ok: true });
+  } catch (error: any) {
+    // If DB fails, we can fall back to demo response for now or just return error
+    if (!process.env.MONGODB_URI) {
+      return NextResponse.json({
+        ok: true,
+        mode: "demo",
+        message: "Inquiry accepted locally. Configure MONGODB_URI to persist inquiries."
+      });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  return NextResponse.json({ ok: true });
 }

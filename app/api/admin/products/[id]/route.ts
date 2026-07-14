@@ -5,9 +5,9 @@ import {
   getUniqueProductSlug,
   normalizeProductPayload,
   productSchema,
-  replaceProductImages,
 } from "@/lib/admin/products";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import connectToDatabase from "@/lib/db/mongodb";
+import { Product as ProductModel } from "@/lib/models/Product";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -35,62 +35,55 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: normalized.error }, { status: 400 });
   }
 
-  const supabase = createSupabaseAdminClient();
-  if (!supabase) {
+  if (session.demo) {
     return NextResponse.json({ ok: true, mode: "demo" });
   }
 
-  const product = parsed.data;
-  const { data: existing, error: fetchError } = await supabase
-    .from("products")
-    .select("id,slug")
-    .eq("id", id)
-    .single();
+  try {
+    await connectToDatabase();
+    
+    const existing = await ProductModel.findById(id).select("slug").lean();
 
-  if (fetchError || !existing) {
-    return NextResponse.json(
-      { error: fetchError?.message || "Product not found" },
-      { status: 404 },
+    if (!existing) {
+      return NextResponse.json(
+        { error: "Product not found" },
+        { status: 404 },
+      );
+    }
+
+    const product = parsed.data;
+    const slug = await getUniqueProductSlug(product.name, id);
+    
+    const updatedProduct = await ProductModel.findByIdAndUpdate(
+      id,
+      {
+        ...normalized.record,
+        slug,
+      },
+      { new: true }
     );
-  }
 
-  const slug = await getUniqueProductSlug(supabase, product.name, id);
-  const { data, error } = await supabase
-    .from("products")
-    .update({
-      ...normalized.record,
-      slug,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .select("id,slug")
-    .single();
+    if (!updatedProduct) {
+      return NextResponse.json(
+        { error: "Could not update product" },
+        { status: 500 },
+      );
+    }
 
-  if (error || !data) {
+    revalidatePath("/admin/products");
+    revalidatePath(`/admin/products/${existing.slug}`);
+    revalidatePath(`/admin/products/${updatedProduct.slug}`);
+    revalidatePath("/products");
+    revalidatePath(`/products/${existing.slug}`);
+    revalidatePath(`/products/${updatedProduct.slug}`);
+
+    return NextResponse.json({ ok: true, id: updatedProduct._id.toString(), slug: updatedProduct.slug });
+  } catch (error: any) {
     return NextResponse.json(
       { error: error?.message || "Could not update product" },
       { status: 500 },
     );
   }
-
-  const imageError = await replaceProductImages(
-    supabase,
-    id,
-    product.name,
-    normalized.imageUrls,
-  );
-  if (imageError) {
-    return NextResponse.json({ error: imageError }, { status: 500 });
-  }
-
-  revalidatePath("/admin/products");
-  revalidatePath(`/admin/products/${existing.slug}`);
-  revalidatePath(`/admin/products/${data.slug}`);
-  revalidatePath("/products");
-  revalidatePath(`/products/${existing.slug}`);
-  revalidatePath(`/products/${data.slug}`);
-
-  return NextResponse.json({ ok: true, id: data.id, slug: data.slug });
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
@@ -100,18 +93,20 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   const { id } = await context.params;
-  const supabase = createSupabaseAdminClient();
-  if (!supabase) {
+  
+  if (session.demo) {
     return NextResponse.json({ ok: true, mode: "demo" });
   }
 
-  const { error } = await supabase.from("products").delete().eq("id", id);
-  if (error) {
+  try {
+    await connectToDatabase();
+    await ProductModel.findByIdAndDelete(id);
+
+    revalidatePath("/admin/products");
+    revalidatePath("/products");
+
+    return NextResponse.json({ ok: true });
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  revalidatePath("/admin/products");
-  revalidatePath("/products");
-
-  return NextResponse.json({ ok: true });
 }

@@ -5,9 +5,9 @@ import {
   getUniqueProductSlug,
   normalizeProductPayload,
   productSchema,
-  replaceProductImages,
 } from "@/lib/admin/products";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import connectToDatabase from "@/lib/db/mongodb";
+import { Product as ProductModel } from "@/lib/models/Product";
 
 export async function POST(request: Request) {
   const session = await getAdminSession();
@@ -30,42 +30,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: normalized.error }, { status: 400 });
   }
 
-  const supabase = createSupabaseAdminClient();
-  if (!supabase) {
+  if (session.demo) {
     return NextResponse.json({ ok: true, mode: "demo" });
   }
 
-  const product = parsed.data;
-  const slug = await getUniqueProductSlug(supabase, product.name);
-  const { data, error } = await supabase
-    .from("products")
-    .insert({
+  try {
+    await connectToDatabase();
+    
+    const product = parsed.data;
+    const slug = await getUniqueProductSlug(product.name);
+    
+    const newProduct = await ProductModel.create({
       ...normalized.record,
       slug,
-    })
-    .select("id,name,slug")
-    .single();
+    });
 
-  if (error || !data) {
+    revalidatePath("/admin/products");
+    revalidatePath("/products");
+    revalidatePath(`/products/${newProduct.slug}`);
+
+    return NextResponse.json({ ok: true, id: newProduct._id.toString(), slug: newProduct.slug });
+  } catch (error: any) {
     return NextResponse.json(
       { error: error?.message || "Could not create product" },
       { status: 500 },
     );
   }
-
-  const imageError = await replaceProductImages(
-    supabase,
-    data.id,
-    product.name,
-    normalized.imageUrls,
-  );
-  if (imageError) {
-    return NextResponse.json({ error: imageError }, { status: 500 });
-  }
-
-  revalidatePath("/admin/products");
-  revalidatePath("/products");
-  revalidatePath(`/products/${data.slug}`);
-
-  return NextResponse.json({ ok: true, id: data.id, slug: data.slug });
 }

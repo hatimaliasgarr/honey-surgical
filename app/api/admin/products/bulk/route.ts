@@ -6,12 +6,14 @@ import {
   getUniqueProductSlug,
   normalizeStatus,
   parseSpecifications,
-  replaceProductImages,
   sanitizeImageUrls,
   splitList,
-  type ProductRecord,
 } from "@/lib/admin/products";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import connectToDatabase from "@/lib/db/mongodb";
+import { Product as ProductModel } from "@/lib/models/Product";
+import { Category as CategoryModel } from "@/lib/models/Category";
+import { Brand as BrandModel } from "@/lib/models/Brand";
+import mongoose from "mongoose";
 
 const bulkSchema = z.object({
   rows: z.array(
@@ -28,16 +30,6 @@ function cell(row: Record<string, unknown>, keys: string[]) {
 
 function lookupKey(value: string) {
   return value.toLowerCase().trim();
-}
-
-function buildLookup(rows: { id: string; name: string; slug: string }[]) {
-  const lookup = new Map<string, string>();
-  rows.forEach((row) => {
-    lookup.set(lookupKey(row.id), row.id);
-    lookup.set(lookupKey(row.name), row.id);
-    lookup.set(lookupKey(row.slug), row.id);
-  });
-  return lookup;
 }
 
 function reserveSlug(slug: string, reserved: Set<string>) {
@@ -70,8 +62,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = createSupabaseAdminClient();
-  if (!supabase) {
+  if (session.demo) {
     return NextResponse.json({
       ok: true,
       mode: "demo",
@@ -79,176 +70,129 @@ export async function POST(request: Request) {
     });
   }
 
-  const [categoriesResult, brandsResult] = await Promise.all([
-    supabase.from("categories").select("id,name,slug"),
-    supabase.from("brands").select("id,name,slug"),
-  ]);
-
-  if (
-    categoriesResult.error ||
-    brandsResult.error ||
-    !categoriesResult.data ||
-    !brandsResult.data
-  ) {
-    return NextResponse.json(
-      {
-        error:
-          categoriesResult.error?.message ||
-          brandsResult.error?.message ||
-          "Could not load categories or brands",
-      },
-      { status: 500 },
-    );
-  }
-
-  const categoryLookup = buildLookup(categoriesResult.data);
-  const brandLookup = buildLookup(brandsResult.data);
-  const skipped: string[] = [];
-  const imageUrlsBySku = new Map<string, string[]>();
-  const rowsToImport: Omit<ProductRecord, "slug">[] = [];
-
-  parsed.data.rows.forEach((row, index) => {
-    const rowNumber = index + 2;
-    const name = cell(row, ["name", "product name", "product_name"]);
-    const sku = cell(row, ["sku"]);
-    const categoryValue = cell(row, [
-      "category_id",
-      "category id",
-      "category",
-      "category name",
-      "category_name",
-      "category slug",
-      "category_slug",
-    ]);
-    const brandValue = cell(row, [
-      "brand_id",
-      "brand id",
-      "brand",
-      "brand name",
-      "brand_name",
-      "brand slug",
-      "brand_slug",
-    ]);
-    const categoryId = categoryLookup.get(lookupKey(categoryValue));
-    const brandId = brandLookup.get(lookupKey(brandValue));
-    const priceValue = cell(row, ["price"]);
-    const price = priceValue ? Number(priceValue) : null;
-    const specificationText = cell(row, [
-      "specifications",
-      "specification",
-      "specs",
-    ]);
-    const specifications = parseSpecifications(specificationText);
-    const imageText = cell(row, [
-      "images",
-      "image",
-      "image_url",
-      "image url",
-      "image urls",
-      "image_urls",
+  try {
+    await connectToDatabase();
+    
+    const [categories, brands] = await Promise.all([
+      CategoryModel.find().select("_id name slug").lean(),
+      BrandModel.find().select("_id name slug").lean(),
     ]);
 
-    if (!name || !sku || !categoryId || !brandId) {
-      skipped.push(`Row ${rowNumber}: missing name, SKU, category, or brand.`);
-      return;
-    }
-
-    if (priceValue && Number.isNaN(price)) {
-      skipped.push(`Row ${rowNumber}: price is not a number.`);
-      return;
-    }
-
-    if (!specifications.ok) {
-      skipped.push(`Row ${rowNumber}: ${specifications.error}`);
-      return;
-    }
-
-    if (imageText) {
-      imageUrlsBySku.set(sku, sanitizeImageUrls(splitList(imageText)));
-    }
-
-    rowsToImport.push({
-      name,
-      sku,
-      category_id: categoryId,
-      brand_id: brandId,
-      price,
-      short_description:
-        cell(row, ["short_description", "short description", "short_desc"]) ||
-        name,
-      description: cell(row, ["description"]) || name,
-      specifications: specifications.value,
-      features: splitList(cell(row, ["features"])),
-      keywords: splitList(cell(row, ["keywords"])),
-      status: normalizeStatus(cell(row, ["status"]).toLowerCase()),
+    const categoryLookup = new Map<string, string>();
+    categories.forEach((cat: any) => {
+      const idStr = cat._id.toString();
+      categoryLookup.set(lookupKey(idStr), idStr);
+      categoryLookup.set(lookupKey(cat.name), idStr);
+      categoryLookup.set(lookupKey(cat.slug), idStr);
     });
-  });
 
-  if (!rowsToImport.length) {
-    return NextResponse.json(
-      { error: "No valid products found.", skipped },
-      { status: 400 },
-    );
-  }
+    const brandLookup = new Map<string, string>();
+    brands.forEach((brand: any) => {
+      const idStr = brand._id.toString();
+      brandLookup.set(lookupKey(idStr), idStr);
+      brandLookup.set(lookupKey(brand.name), idStr);
+      brandLookup.set(lookupKey(brand.slug), idStr);
+    });
 
-  const { data: existingProducts, error: existingError } = await supabase
-    .from("products")
-    .select("id,sku")
-    .in(
-      "sku",
-      rowsToImport.map((row) => row.sku),
-    );
+    const skipped: string[] = [];
+    const rowsToImport: any[] = [];
+    const skusToImport: string[] = [];
 
-  if (existingError) {
-    return NextResponse.json({ error: existingError.message }, { status: 500 });
-  }
+    parsed.data.rows.forEach((row, index) => {
+      const rowNumber = index + 2;
+      const name = cell(row, ["name", "product name", "product_name"]);
+      const sku = cell(row, ["sku"]);
+      const categoryValue = cell(row, [
+        "category_id", "category id", "category", "category name", "category_name", "category slug", "category_slug",
+      ]);
+      const brandValue = cell(row, [
+        "brand_id", "brand id", "brand", "brand name", "brand_name", "brand slug", "brand_slug",
+      ]);
+      const categoryId = categoryLookup.get(lookupKey(categoryValue));
+      const brandId = brandLookup.get(lookupKey(brandValue));
+      const priceValue = cell(row, ["price"]);
+      const price = priceValue ? Number(priceValue) : null;
+      const specificationText = cell(row, ["specifications", "specification", "specs"]);
+      const specifications = parseSpecifications(specificationText);
+      const imageText = cell(row, ["images", "image", "image_url", "image url", "image urls", "image_urls"]);
 
-  const existingBySku = new Map(
-    (existingProducts || []).map((row) => [row.sku, row.id]),
-  );
-  const reservedSlugs = new Set<string>();
-  const products: ProductRecord[] = [];
+      if (!name || !sku || !categoryId || !brandId) {
+        skipped.push(`Row ${rowNumber}: missing name, SKU, category, or brand.`);
+        return;
+      }
 
-  for (const row of rowsToImport) {
-    const slug = await getUniqueProductSlug(
-      supabase,
-      row.name,
-      existingBySku.get(row.sku),
-    );
-    products.push({ ...row, slug: reserveSlug(slug, reservedSlugs) });
-  }
+      if (priceValue && Number.isNaN(price)) {
+        skipped.push(`Row ${rowNumber}: price is not a number.`);
+        return;
+      }
 
-  const { data: upsertedProducts, error } = await supabase
-    .from("products")
-    .upsert(products, { onConflict: "sku" })
-    .select("id,sku,name,slug");
+      if (!specifications.ok) {
+        skipped.push(`Row ${rowNumber}: ${specifications.error}`);
+        return;
+      }
 
-  if (error || !upsertedProducts) {
+      const rawImageUrls = imageText ? sanitizeImageUrls(splitList(imageText)) : [];
+      const images = rawImageUrls.map((url, i) => ({
+        id: `img_${sku}_${i}`,
+        url,
+        alt: name,
+        sortOrder: i + 1
+      }));
+
+      skusToImport.push(sku);
+      rowsToImport.push({
+        name,
+        sku,
+        category: new mongoose.Types.ObjectId(categoryId),
+        brand: new mongoose.Types.ObjectId(brandId),
+        price,
+        shortDescription: cell(row, ["short_description", "short description", "short_desc"]) || name,
+        description: cell(row, ["description"]) || name,
+        specifications: specifications.value,
+        features: splitList(cell(row, ["features"])),
+        keywords: splitList(cell(row, ["keywords"])),
+        status: normalizeStatus(cell(row, ["status"]).toLowerCase()),
+        images
+      });
+    });
+
+    if (!rowsToImport.length) {
+      return NextResponse.json(
+        { error: "No valid products found.", skipped },
+        { status: 400 },
+      );
+    }
+
+    const existingProducts = await ProductModel.find({ sku: { $in: skusToImport } }).select("_id sku").lean();
+    const existingBySku = new Map(existingProducts.map((p: any) => [p.sku, p._id.toString()]));
+    
+    const reservedSlugs = new Set<string>();
+    const bulkOperations = [];
+
+    for (const row of rowsToImport) {
+      const existingId = existingBySku.get(row.sku);
+      const slug = await getUniqueProductSlug(row.name, existingId);
+      row.slug = reserveSlug(slug, reservedSlugs);
+      
+      bulkOperations.push({
+        updateOne: {
+          filter: { sku: row.sku },
+          update: { $set: row },
+          upsert: true
+        }
+      });
+    }
+
+    await ProductModel.bulkWrite(bulkOperations);
+
+    revalidatePath("/admin/products");
+    revalidatePath("/products");
+
+    return NextResponse.json({ ok: true, count: rowsToImport.length, skipped });
+  } catch (error: any) {
     return NextResponse.json(
       { error: error?.message || "Could not import products" },
       { status: 500 },
     );
   }
-
-  for (const product of upsertedProducts) {
-    const imageUrls = imageUrlsBySku.get(product.sku);
-    if (!imageUrls) {
-      continue;
-    }
-
-    const imageError = await replaceProductImages(
-      supabase,
-      product.id,
-      product.name,
-      imageUrls,
-    );
-    if (imageError) {
-      return NextResponse.json({ error: imageError }, { status: 500 });
-    }
-  }
-
-  revalidatePath("/admin/products");
-  revalidatePath("/products");
-
-  return NextResponse.json({ ok: true, count: products.length, skipped });
 }
