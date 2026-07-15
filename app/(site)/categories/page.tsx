@@ -36,7 +36,7 @@ export default async function CategoriesPage() {
             <section key={category.id} className="grid gap-4">
               <CategoryCard category={category} />
               {category.children?.length ? (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                   {category.children.map((child) => (
                     <CategoryCard key={child.id} category={child} />
                   ))}

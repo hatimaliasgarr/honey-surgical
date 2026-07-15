@@ -63,14 +63,14 @@ export default async function HomePage() {
               </p>
             </div>
             <SearchBox products={allProducts} large />
-            <div className="flex flex-wrap gap-3">
-              <Button asChild size="lg">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Button asChild size="lg" className="w-full sm:w-auto justify-center">
                 <Link href="/categories">
                   Browse Categories
                   <ArrowRight aria-hidden="true" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg">
+              <Button asChild variant="outline" size="lg" className="w-full sm:w-auto justify-center">
                 <Link href="/contact">Contact Us</Link>
               </Button>
               <CompareLink />
@@ -91,7 +91,7 @@ export default async function HomePage() {
               <Link href="/categories">View all categories</Link>
             </Button>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {featuredCategories.map((category) => (
               <CategoryCard key={category.id} category={category} />
             ))}
@@ -110,7 +110,7 @@ export default async function HomePage() {
               <Link href="/products">Browse catalog</Link>
             </Button>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {featuredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}

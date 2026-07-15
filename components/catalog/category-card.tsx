@@ -18,14 +18,16 @@ export function CategoryCard({ category }: { category: Category }) {
           className="object-cover transition duration-300 group-hover:scale-105"
         />
       </div>
-      <div className="grid gap-3 p-4">
+      <div className="grid gap-2 p-3 sm:gap-3 sm:p-4">
         <div>
-          <h3 className="line-clamp-1 font-semibold">{category.name}</h3>
-          <p className="mt-1 line-clamp-2 text-sm leading-6 text-muted-foreground">{category.description}</p>
+          <h3 className="line-clamp-1 text-sm font-semibold sm:text-base">{category.name}</h3>
+          <p className="mt-1 hidden text-xs leading-5 text-muted-foreground sm:line-clamp-2 sm:text-sm sm:leading-6">
+            {category.description}
+          </p>
         </div>
-        <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary sm:gap-2 sm:text-sm">
           View products
-          <ArrowRight className="size-4 transition group-hover:translate-x-0.5" aria-hidden="true" />
+          <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5 sm:size-4" aria-hidden="true" />
         </span>
       </div>
     </Link>

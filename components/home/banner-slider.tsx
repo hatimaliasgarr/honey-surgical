@@ -36,7 +36,7 @@ export function BannerSlider() {
   const slide = slides[index];
 
   return (
-    <div className="relative min-h-[280px] overflow-hidden rounded-lg border border-border bg-medical-deep text-white shadow-soft">
+    <div className="relative aspect-[16/10] sm:aspect-[21/9] lg:aspect-[16/10] min-h-[240px] sm:min-h-0 w-full overflow-hidden rounded-lg border border-border bg-medical-deep text-white shadow-soft">
       <AnimatePresence mode="wait">
         <motion.div
           key={slide.title}
@@ -48,20 +48,20 @@ export function BannerSlider() {
         >
           <Image src={slide.image} alt="" fill priority className="object-cover" />
           <div className="absolute inset-0 bg-medical-deep/70" />
-          <div className="absolute inset-0 flex items-end p-6 md:p-8">
+          <div className="absolute inset-0 flex items-end p-5 sm:p-8">
             <div className="max-w-xl">
-              <h2 className="text-2xl font-bold tracking-normal md:text-3xl">{slide.title}</h2>
-              <p className="mt-3 text-sm leading-6 text-white/85 md:text-base">{slide.text}</p>
+              <h2 className="text-xl font-bold tracking-normal sm:text-2xl md:text-3xl">{slide.title}</h2>
+              <p className="mt-2 text-xs leading-5 text-white/85 sm:text-sm sm:leading-6 md:text-base">{slide.text}</p>
             </div>
           </div>
         </motion.div>
       </AnimatePresence>
-      <div className="absolute bottom-5 right-5 flex gap-2" aria-hidden="true">
+      <div className="absolute bottom-4 right-4 flex gap-1.5" aria-hidden="true">
         {slides.map((item, slideIndex) => (
           <span
             key={item.title}
-            className={`h-2 rounded-full transition-all ${
-              slideIndex === index ? "w-7 bg-white" : "w-2 bg-white/50"
+            className={`h-1.5 rounded-full transition-all ${
+              slideIndex === index ? "w-6 bg-white" : "w-1.5 bg-white/50"
             }`}
           />
         ))}

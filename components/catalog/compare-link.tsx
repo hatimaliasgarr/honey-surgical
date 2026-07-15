@@ -32,7 +32,7 @@ export function CompareLink() {
   const href = items.length ? `/compare?items=${items.join(",")}` : "/compare";
 
   return (
-    <Button asChild variant="beige" size="sm">
+    <Button asChild variant="beige" size="sm" className="w-full sm:w-auto justify-center">
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <Link href={href as any}>
         <Scale aria-hidden="true" />

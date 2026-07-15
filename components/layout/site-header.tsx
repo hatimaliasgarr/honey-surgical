@@ -26,7 +26,7 @@ export function SiteHeader() {
             priority
           />
           <span className="min-w-0">
-            <span className="block truncate text-base font-bold tracking-tight" style={{ color: "#1A3A5C" }}>
+            <span className="block truncate text-sm font-bold tracking-tight sm:text-base" style={{ color: "#1A3A5C" }}>
               HONEY SURGICALS
             </span>
             <span className="hidden text-xs text-muted-foreground sm:block">Surgical Products Catalog</span>

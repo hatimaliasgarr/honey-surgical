@@ -126,17 +126,17 @@ export default async function ProductDetailsPage({ params }: PageProps) {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <Button asChild size="lg">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Button asChild size="lg" className="w-full sm:w-auto justify-center">
                 <a href="#inquiry">Request Quote</a>
               </Button>
-              <Button asChild variant="outline" size="lg">
+              <Button asChild variant="outline" size="lg" className="w-full sm:w-auto justify-center">
                 <a href={`https://wa.me/${siteConfig.whatsapp}?text=${whatsappText}`} target="_blank" rel="noreferrer">
                   <MessageCircle aria-hidden="true" />
                   WhatsApp Inquiry
                 </a>
               </Button>
-              <Button asChild variant="beige" size="lg">
+              <Button asChild variant="beige" size="lg" className="w-full sm:w-auto justify-center">
                 <Link href="/contact">
                   <Phone aria-hidden="true" />
                   Contact Sales
@@ -187,14 +187,14 @@ export default async function ProductDetailsPage({ params }: PageProps) {
                 Share quantities, delivery city, preferred brand, or technical specification.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild variant="outline">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button asChild variant="outline" className="w-full sm:w-auto justify-center">
                 <a href={`mailto:${siteConfig.email}`}>
                   <Mail aria-hidden="true" />
                   Email Sales
                 </a>
               </Button>
-              <Button asChild>
+              <Button asChild className="w-full sm:w-auto justify-center">
                 <a href={`tel:${siteConfig.phone.replace(/\s/g, "")}`}>
                   <Phone aria-hidden="true" />
                   Call
@@ -207,7 +207,7 @@ export default async function ProductDetailsPage({ params }: PageProps) {
         {related.length ? (
           <div>
             <h2 className="text-2xl font-bold tracking-normal">Related Products</h2>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
               {related.map((item) => (
                 <ProductCard key={item.id} product={item} />
               ))}

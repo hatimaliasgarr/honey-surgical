@@ -46,9 +46,12 @@ export function CompareToggle({
   return (
     <Button
       type="button"
-      variant={selected ? "default" : "outline"}
-      size="icon"
       onClick={toggle}
+      className={`size-8 rounded-full border shadow-sm backdrop-blur focus-ring sm:size-9 [&_svg]:size-4 ${
+        selected
+          ? "bg-primary text-primary-foreground border-primary hover:bg-medical-deep"
+          : "bg-white/90 text-muted-foreground border-border/85 hover:bg-secondary hover:text-foreground"
+      }`}
       aria-label={`${selected ? "Remove" : "Add"} ${productName} ${selected ? "from" : "to"} comparison`}
       title={selected ? "Remove from compare" : "Compare product"}
     >
