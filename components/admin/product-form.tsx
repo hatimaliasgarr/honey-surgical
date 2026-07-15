@@ -304,7 +304,7 @@ export function ProductForm({
             Drag and drop or choose files
           </span>
         </label>
-        <Input
+        <input
           id="images"
           type="file"
           accept="image/*"
@@ -318,14 +318,17 @@ export function ProductForm({
           }}
         />
         {images.length ? (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             {images.map((image, index) => (
-              <span
+              <div
                 key={`${image}-${index}`}
-                className="inline-flex items-center gap-2 rounded-md border border-border bg-white px-2 py-1 text-xs"
+                className="relative size-16 shrink-0 overflow-hidden rounded-lg border border-border bg-muted/30 group transition-all hover:border-destructive/30"
               >
-                <ImagePlus className="size-4" aria-hidden="true" />
-                {image}
+                <img
+                  src={image}
+                  alt={`Product image ${index + 1}`}
+                  className="h-full w-full object-cover"
+                />
                 <button
                   type="button"
                   onClick={() =>
@@ -333,11 +336,12 @@ export function ProductForm({
                       current.filter((_, itemIndex) => itemIndex !== index),
                     )
                   }
+                  className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-90 transition-all hover:bg-destructive hover:scale-105"
+                  aria-label={`Remove image ${index + 1}`}
                 >
                   <X className="size-3" aria-hidden="true" />
-                  <span className="sr-only">Remove image</span>
                 </button>
-              </span>
+              </div>
             ))}
           </div>
         ) : null}

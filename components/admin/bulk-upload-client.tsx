@@ -101,7 +101,7 @@ export function BulkUploadClient() {
       <label className="grid cursor-pointer place-items-center rounded-lg border border-dashed border-border bg-secondary p-8 text-center hover:bg-medical-pale">
         <FileSpreadsheet className="size-9 text-primary" aria-hidden="true" />
         <span className="mt-2 font-medium">Choose CSV or Excel file</span>
-        <Input
+        <input
           type="file"
           accept=".csv,.xlsx,.xls"
           className="sr-only"

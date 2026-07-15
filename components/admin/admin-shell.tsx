@@ -132,7 +132,7 @@ export function AdminShell({ session, children }: { session: AdminSession; child
       </div>
 
       <div className="container py-6 lg:py-8">
-        <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
+        <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[240px_1fr] lg:gap-8">
           {/* Permanent Desktop Sidebar */}
           <aside className="hidden lg:block rounded-xl border border-border bg-white p-4 shadow-sm h-fit sticky top-6">
             <SidebarContent />
