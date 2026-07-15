@@ -49,7 +49,7 @@ export function ProductCard({ product }: { product: Product }) {
       </div>
 
       {/* Content details and actions layout */}
-      <div className="flex flex-1 flex-col p-4">
+      <div className="flex flex-1 flex-col p-3 sm:p-4">
         {/* Brand & SKU info row */}
         <div className="flex items-center justify-between gap-2 mb-1.5">
           <span className="text-[10px] font-semibold text-muted-foreground/80 uppercase tracking-wider truncate max-w-[60%]">
@@ -62,32 +62,32 @@ export function ProductCard({ product }: { product: Product }) {
 
         {/* Title link */}
         <Link href={`/products/${product.slug}`} className="focus-ring mb-2 group/title">
-          <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold text-medical-deep leading-tight group-hover/title:text-medical-blue transition-colors">
+          <h3 className="line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem] text-xs font-semibold text-medical-deep leading-tight sm:text-sm md:text-base group-hover/title:text-medical-blue transition-colors">
             {product.name}
           </h3>
         </Link>
 
         {/* Short Description */}
-        <p className="line-clamp-2 min-h-[2rem] text-xs text-muted-foreground leading-normal mb-4">
+        <p className="line-clamp-2 min-h-[1.75rem] text-[10px] text-muted-foreground leading-normal mb-3 sm:min-h-[2rem] sm:text-xs sm:mb-4">
           {product.shortDescription}
         </p>
 
         {/* Bottom row layout - Price and CTAs */}
         <div className="mt-auto pt-3 border-t border-border/40 flex flex-col gap-3">
           <div className="flex items-baseline gap-1">
-            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">MSRP</span>
-            <span className="text-base font-bold text-medical-deep font-mono tracking-tight tabular-nums">
+            <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider sm:text-[10px]">MSRP</span>
+            <span className="text-sm font-bold text-medical-deep font-mono tracking-tight tabular-nums sm:text-base">
               {formatCurrency(product.price)}
             </span>
           </div>
 
           {/* Action layout */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 sm:gap-2">
             <Button
               asChild
               variant="outline"
               size="sm"
-              className="h-9 w-full justify-center text-xs font-semibold border-border/80 text-foreground hover:bg-medical-bluePale/20 hover:text-medical-blue hover:border-medical-blue/30"
+              className="h-8 w-full justify-center text-[10px] font-semibold border-border/80 text-foreground hover:bg-medical-bluePale/20 hover:text-medical-blue hover:border-medical-blue/30 sm:h-9 sm:text-xs"
             >
               <a
                 href={`https://wa.me/${siteConfig.whatsapp}?text=${whatsappText}`}
@@ -95,21 +95,21 @@ export function ProductCard({ product }: { product: Product }) {
                 rel="noreferrer"
                 aria-label={`Inquire about ${product.name} on WhatsApp`}
               >
-                <MessageCircle className="size-3.5 mr-1.5 text-medical-green" aria-hidden="true" />
+                <MessageCircle className="size-3.5 mr-1 text-medical-green sm:mr-1.5" aria-hidden="true" />
                 WhatsApp
               </a>
             </Button>
             <Button
               asChild
               size="sm"
-              className="h-9 w-full justify-center text-xs font-semibold bg-medical-deep text-white hover:bg-medical-deep/90"
+              className="h-8 w-full justify-center text-[10px] font-semibold bg-medical-deep text-white hover:bg-medical-deep/90 sm:h-9 sm:text-xs"
             >
               <Link
                 href={`/products/${product.slug}#inquiry`}
                 aria-label={`Request quote for ${product.name}`}
               >
                 Quote
-                <ArrowRight className="size-3.5 ml-1.5" aria-hidden="true" />
+                <ArrowRight className="size-3.5 ml-1 sm:ml-1.5" aria-hidden="true" />
               </Link>
             </Button>
           </div>
