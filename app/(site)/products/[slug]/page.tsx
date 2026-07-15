@@ -14,6 +14,7 @@ import {
 import { siteConfig } from "@/lib/config/site";
 import { formatCurrency } from "@/lib/utils";
 import { BreadcrumbsJsonLd } from "@/components/seo/json-ld";
+import { ProductDetailCompare } from "@/components/catalog/compare-toggle";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -142,6 +143,7 @@ export default async function ProductDetailsPage({ params }: PageProps) {
                   Contact Sales
                 </Link>
               </Button>
+              <ProductDetailCompare productSlug={product.slug} productName={product.name} />
             </div>
 
             <div className="grid gap-4">

@@ -8,6 +8,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { primaryNav, siteConfig } from "@/lib/config/site";
+import { CompareLink } from "@/components/catalog/compare-link";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -49,6 +50,9 @@ export function SiteHeader() {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
+          <div className="hidden lg:block">
+            <CompareLink />
+          </div>
           <Button asChild variant="outline" size="sm">
             <Link href="/products">
               <Search aria-hidden="true" />
@@ -63,16 +67,18 @@ export function SiteHeader() {
           </Button>
         </div>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="lg:hidden"
-          onClick={() => setOpen((value) => !value)}
-          aria-label={open ? "Close menu" : "Open menu"}
-          aria-expanded={open}
-        >
-          {open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
-        </Button>
+        <div className="flex items-center gap-2 lg:hidden">
+          <CompareLink />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setOpen((value) => !value)}
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
+          >
+            {open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
+          </Button>
+        </div>
       </div>
 
       {open ? (

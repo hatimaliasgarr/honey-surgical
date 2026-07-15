@@ -4,7 +4,6 @@ import { ArrowRight, BadgeCheck, Headphones, MapPin, Medal, ShieldCheck, Tags } 
 import { BannerSlider } from "@/components/home/banner-slider";
 import { Button } from "@/components/ui/button";
 import { CategoryCard } from "@/components/catalog/category-card";
-import { CompareLink } from "@/components/catalog/compare-link";
 import { InquiryForm } from "@/components/catalog/inquiry-form";
 import { ProductCard } from "@/components/catalog/product-card";
 import { SearchBox } from "@/components/catalog/search-box";
@@ -73,7 +72,6 @@ export default async function HomePage() {
               <Button asChild variant="outline" size="lg" className="w-full sm:w-auto justify-center">
                 <Link href="/contact">Contact Us</Link>
               </Button>
-              <CompareLink />
             </div>
           </div>
           <BannerSlider />

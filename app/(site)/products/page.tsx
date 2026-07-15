@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { ProductCard } from "@/components/catalog/product-card";
 import { ProductFilterForm } from "@/components/catalog/product-filter-form";
-import { CompareLink } from "@/components/catalog/compare-link";
 import {
   getAllBrands,
   getAllCategories,
@@ -58,7 +57,6 @@ export default async function ProductsPage({ searchParams }: PageProps) {
               Search by product name, category, SKU, brand, and keywords.
             </p>
           </div>
-          <CompareLink />
         </div>
         <ProductFilterForm categories={categories} brands={brands} filters={filters} />
         <div className="flex items-center justify-between text-sm text-muted-foreground">
