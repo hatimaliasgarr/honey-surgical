@@ -226,7 +226,7 @@ export default async function CategoryDetailsPage({ params }: PageProps) {
               </div>
               <h3 className="text-lg font-bold text-medical-deep">No Products Found</h3>
               <p className="mt-1 text-sm text-muted-foreground max-w-sm leading-relaxed">
-                We currently don't have products cataloged in this category. We can procure medical items directly for your institute.
+                We currently don&apos;t have products cataloged in this category. We can procure medical items directly for your institute.
               </p>
               <div className="mt-6 flex flex-col sm:flex-row gap-3">
                 <Button asChild variant="outline">
