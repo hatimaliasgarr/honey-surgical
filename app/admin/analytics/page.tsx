@@ -3,6 +3,7 @@ import { DashboardCharts } from "@/components/admin/dashboard-charts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireAdmin } from "@/lib/auth/admin";
 import { getDashboardMetrics } from "@/lib/repositories/catalog-repository";
+import { Badge } from "@/components/ui/badge";
 
 export default async function AdminAnalyticsPage() {
   const [session, metrics] = await Promise.all([requireAdmin(), getDashboardMetrics()]);
@@ -16,8 +17,27 @@ export default async function AdminAnalyticsPage() {
         </div>
         <DashboardCharts metrics={metrics} />
         <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
-          <h2 className="font-semibold">Search Trends</h2>
-          <div className="mt-4 overflow-hidden rounded-lg border border-border">
+          <h2 className="font-semibold text-lg text-medical-deep mb-4">Search Trends</h2>
+          
+          {/* Mobile Card List View */}
+          <div className="grid gap-4 md:hidden">
+            {metrics.searchTrends.map((trend) => (
+              <div 
+                key={trend.query} 
+                className="flex items-center justify-between gap-3 rounded-xl border border-border/80 bg-medical-bluePale/5 p-4 shadow-sm"
+              >
+                <span className="font-bold text-sm text-medical-deep">
+                  &quot;{trend.query}&quot;
+                </span>
+                <Badge variant="secondary" className="shrink-0 font-mono font-bold text-[10px]">
+                  {trend.count} searches
+                </Badge>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-hidden rounded-lg border border-border">
             <Table>
               <TableHeader>
                 <TableRow>

@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth/admin";
 import { getDashboardMetrics } from "@/lib/repositories/catalog-repository";
 import { formatCurrency } from "@/lib/utils";
 import { SeedButton } from "@/components/admin/seed-button";
+import { Badge } from "@/components/ui/badge";
 
 const widgetIcons = [Boxes, FolderTree, Inbox, TrendingUp];
 
@@ -45,8 +46,47 @@ export default async function AdminDashboardPage() {
         <DashboardCharts metrics={metrics} />
 
         <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
-          <h2 className="font-semibold">Most Viewed Products</h2>
-          <div className="mt-4 overflow-hidden rounded-lg border border-border">
+          <h2 className="font-semibold text-lg text-medical-deep">Most Viewed Products</h2>
+          
+          {/* Mobile Card List View */}
+          <div className="mt-4 grid gap-4 md:hidden">
+            {metrics.mostViewedProducts.map((product) => (
+              <div 
+                key={product.id} 
+                className="flex flex-col gap-2 rounded-xl border border-border/80 bg-medical-bluePale/5 p-4 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <span className="font-bold text-sm text-medical-deep leading-tight">
+                    {product.name}
+                  </span>
+                  <Badge variant="beige" className="shrink-0 text-[10px] bg-medical-bluePale/30 text-medical-deep border border-medical-blue/20">
+                    {product.category.name}
+                  </Badge>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-xs border-t border-border/40 pt-2.5 mt-1">
+                  <div>
+                    <span className="block text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">SKU</span>
+                    <span className="font-mono text-muted-foreground select-all text-[11px]">{product.sku}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">Price</span>
+                    <span className="font-semibold text-foreground">{formatCurrency(product.price)}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-border/40 pt-2 mt-1 text-xs">
+                  <span className="text-muted-foreground text-[10px] uppercase tracking-wider font-semibold">Total Views</span>
+                  <Badge variant="secondary" className="px-2 py-0.5 font-bold text-[10px]">
+                    {product.viewCount} views
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="mt-4 hidden md:block overflow-hidden rounded-lg border border-border">
             <Table>
               <TableHeader>
                 <TableRow>

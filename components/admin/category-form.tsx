@@ -194,8 +194,68 @@ export function CategoryForm({ categories }: { categories: Category[] }) {
       </form>
 
       <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
-        <h2 className="font-semibold">Categories</h2>
-        <div className="mt-4 overflow-hidden rounded-lg border border-border">
+        <h2 className="font-semibold text-lg text-medical-deep mb-4">Categories</h2>
+        
+        {/* Mobile Card List View */}
+        <div className="grid gap-4 md:hidden">
+          {categories.map((category) => (
+            <div 
+              key={category.id} 
+              className="flex flex-col gap-2 rounded-xl border border-border/80 bg-medical-bluePale/5 p-4 shadow-sm"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <span className="font-bold text-sm text-medical-deep leading-tight">
+                  {category.parentId ? "↳ " : ""}
+                  {category.name}
+                </span>
+                <span className="shrink-0">
+                  {category.parentId ? (
+                    <Badge variant="secondary" className="text-[10px]">{byId.get(category.parentId)?.name}</Badge>
+                  ) : (
+                    <Badge variant="beige" className="text-[10px] bg-medical-bluePale/30 text-medical-deep border border-medical-blue/20">Top level</Badge>
+                  )}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs border-t border-border/40 pt-2.5 mt-1">
+                <div>
+                  <span className="block text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">Slug</span>
+                  <span className="font-mono text-muted-foreground select-all text-[11px]">{category.slug}</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">Sort Order</span>
+                  <span className="font-semibold text-foreground font-mono">{category.sortOrder}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t border-border/40 pt-2 mt-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  aria-label={`Edit ${category.name}`}
+                  onClick={() => setEditingCategory(category)}
+                  className="h-8 text-xs gap-1.5"
+                >
+                  <Pencil aria-hidden="true" className="size-3.5" />
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  aria-label={`Delete ${category.name}`}
+                  onClick={() => remove(category)}
+                  className="h-8 text-xs gap-1.5 text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 aria-hidden="true" className="size-3.5" />
+                  Delete
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-hidden rounded-lg border border-border">
           <Table>
             <TableHeader>
               <TableRow>

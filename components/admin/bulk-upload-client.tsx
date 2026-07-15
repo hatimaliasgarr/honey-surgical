@@ -116,7 +116,32 @@ export function BulkUploadClient() {
 
       {rows.length ? (
         <>
-          <div className="overflow-hidden rounded-lg border border-border">
+          {/* Mobile Card List View */}
+          <div className="grid gap-4 md:hidden">
+            {rows.slice(0, 20).map((row, index) => (
+              <div 
+                key={index} 
+                className="flex flex-col gap-2 rounded-xl border border-border/80 bg-medical-bluePale/5 p-4 shadow-sm text-xs"
+              >
+                <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-1">
+                  <span className="font-bold text-sm text-medical-deep">Row #{index + 1}</span>
+                </div>
+                <div className="grid gap-1.5">
+                  {columns.map((column) => (
+                    <div key={column} className="flex justify-between gap-3">
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{column}</span>
+                      <span className="font-medium text-foreground text-right truncate max-w-[60%]">
+                        {String(row[column] ?? "")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-hidden rounded-lg border border-border">
             <Table>
               <TableHeader>
                 <TableRow>

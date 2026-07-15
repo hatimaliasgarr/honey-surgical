@@ -39,8 +39,57 @@ export default async function AdminProductsPage() {
         </div>
         <ProductForm categories={categories} brands={brands} />
         <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
-          <h2 className="font-semibold">Products</h2>
-          <div className="mt-4 overflow-hidden rounded-lg border border-border">
+          <h2 className="font-semibold text-lg text-medical-deep">Products</h2>
+          
+          {/* Mobile Card List View */}
+          <div className="mt-4 grid gap-4 md:hidden">
+            {products.map((product) => (
+              <div 
+                key={product.id} 
+                className="flex flex-col gap-2 rounded-xl border border-border/80 bg-medical-bluePale/5 p-4 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <span className="font-bold text-sm text-medical-deep leading-tight">
+                    {product.name}
+                  </span>
+                  <Badge
+                    variant={product.status === "active" ? "default" : "secondary"}
+                    className="shrink-0 text-[10px]"
+                  >
+                    {product.status}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs border-t border-border/40 pt-2.5 mt-1">
+                  <div>
+                    <span className="block text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">SKU / Brand</span>
+                    <span className="font-mono text-muted-foreground select-all text-[11px] block">{product.sku}</span>
+                    <span className="text-muted-foreground/80 block mt-0.5">{product.brand.name}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">Category / Price</span>
+                    <div className="mb-1">
+                      <Badge variant="beige" className="text-[9px] bg-medical-bluePale/30 text-medical-deep border border-medical-blue/20">
+                        {product.category.name}
+                      </Badge>
+                    </div>
+                    <span className="font-semibold text-foreground block">{formatCurrency(product.price)}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end border-t border-border/40 pt-2 mt-1">
+                  <ProductActions
+                    productId={product.id}
+                    productSlug={product.slug}
+                    productName={product.name}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="mt-4 hidden md:block overflow-hidden rounded-lg border border-border">
             <Table>
               <TableHeader>
                 <TableRow>

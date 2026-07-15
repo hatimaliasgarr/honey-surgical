@@ -16,8 +16,35 @@ export default async function AdminBrandsPage() {
         </div>
         <BrandForm brands={brands} />
         <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
-          <h2 className="font-semibold">Brands</h2>
-          <div className="mt-4 overflow-hidden rounded-lg border border-border">
+          <h2 className="font-semibold text-lg text-medical-deep mb-4">Brands</h2>
+          
+          {/* Mobile Card List View */}
+          <div className="grid gap-4 md:hidden">
+            {brands.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground border border-dashed rounded-xl bg-white">
+                No brands found. Create one above.
+              </div>
+            ) : (
+              brands.map((brand) => (
+                <div 
+                  key={brand.id} 
+                  className="flex flex-col gap-2 rounded-xl border border-border/80 bg-medical-bluePale/5 p-4 shadow-sm"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-bold text-sm text-medical-deep">
+                      {brand.name}
+                    </span>
+                    <span className="font-mono text-xs text-muted-foreground select-all bg-white border px-2 py-0.5 rounded">
+                      {brand.slug}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-hidden rounded-lg border border-border">
             <Table>
               <TableHeader>
                 <TableRow>
