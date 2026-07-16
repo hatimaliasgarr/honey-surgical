@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { Brand, Category, Product } from "@/lib/types/catalog";
+import type { Brand, Category, Product, ProductTemplate } from "@/lib/types/catalog";
 
 type SaveState = "idle" | "saving" | "success" | "error";
 
@@ -16,10 +16,12 @@ export function ProductForm({
   categories,
   brands,
   product,
+  templates = [],
 }: {
   categories: Category[];
   brands: Brand[];
   product?: Product;
+  templates?: ProductTemplate[];
 }) {
   const router = useRouter();
   const [images, setImages] = useState<string[]>(
@@ -174,6 +176,43 @@ export function ProductForm({
           Create catalog products with Cloudinary images and Supabase data.
         </p>
       </div>
+
+      {templates.length > 0 && (
+        <div className="grid gap-2 border-b border-border/50 pb-4 mb-2">
+          <Label htmlFor="templateSelect" className="text-medical-deep font-semibold">Load Preset Template (Optional)</Label>
+          <Select
+            id="templateSelect"
+            onChange={(e) => {
+              const templateId = e.target.value;
+              if (!templateId) return;
+              const selected = templates.find(t => t.id === templateId);
+              if (selected) {
+                const form = e.currentTarget.form;
+                if (form) {
+                  const shortDescInput = form.querySelector('[name="shortDescription"]') as HTMLInputElement;
+                  const descInput = form.querySelector('[name="description"]') as HTMLTextAreaElement;
+                  const specsInput = form.querySelector('[name="specifications"]') as HTMLTextAreaElement;
+                  const featuresInput = form.querySelector('[name="features"]') as HTMLTextAreaElement;
+                  const keywordsInput = form.querySelector('[name="keywords"]') as HTMLTextAreaElement;
+
+                  if (shortDescInput) shortDescInput.value = selected.shortDescription || "";
+                  if (descInput) descInput.value = selected.description || "";
+                  if (specsInput) specsInput.value = JSON.stringify(selected.specifications || [], null, 2);
+                  if (featuresInput) featuresInput.value = (selected.features || []).join("\n");
+                  if (keywordsInput) keywordsInput.value = (selected.keywords || []).join(", ");
+                }
+              }
+            }}
+          >
+            <option value="">Select a template to auto-fill description & specs</option>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+      )}
 
       <div className="grid gap-3 md:grid-cols-2">
         <div className="grid gap-2">

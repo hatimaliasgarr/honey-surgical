@@ -6,6 +6,7 @@ import {
   getAllBrands,
   getAllCategories,
   getProductBySlug,
+  getAllTemplates,
 } from "@/lib/repositories/catalog-repository";
 
 type PageProps = {
@@ -14,11 +15,12 @@ type PageProps = {
 
 export default async function AdminProductEditPage({ params }: PageProps) {
   const { slug } = await params;
-  const [session, categories, brands, product] = await Promise.all([
+  const [session, categories, brands, product, templates] = await Promise.all([
     requireAdmin(),
     getAllCategories(),
     getAllBrands(),
     getProductBySlug(slug, { includeInactive: true }),
+    getAllTemplates(),
   ]);
 
   if (!product) {
@@ -27,7 +29,7 @@ export default async function AdminProductEditPage({ params }: PageProps) {
 
   return (
     <AdminShell session={session}>
-      <ProductForm categories={categories} brands={brands} product={product} />
+      <ProductForm categories={categories} brands={brands} product={product} templates={templates} />
     </AdminShell>
   );
 }

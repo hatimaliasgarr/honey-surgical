@@ -14,6 +14,7 @@ import { Category as CategoryModel } from "@/lib/models/Category";
 import { Brand as BrandModel } from "@/lib/models/Brand";
 import { Product as ProductModel } from "@/lib/models/Product";
 import { Inquiry as InquiryModel } from "@/lib/models/Inquiry";
+import { ProductTemplate as ProductTemplateModel } from "@/lib/models/ProductTemplate";
 import type {
   Brand,
   Category,
@@ -22,6 +23,7 @@ import type {
   Product,
   ProductFilters,
   ProductStatus,
+  ProductTemplate,
 } from "@/lib/types/catalog";
 import mongoose from "mongoose";
 
@@ -318,6 +320,17 @@ export async function getRecentInquiries(): Promise<Inquiry[]> {
       
     return inquiries.map(i => serializeDoc<Inquiry>(i));
   } catch (error) {
+    return [];
+  }
+}
+
+export async function getAllTemplates(): Promise<ProductTemplate[]> {
+  try {
+    await connectToDatabase();
+    const templates = await ProductTemplateModel.find().sort({ name: 1 }).lean();
+    return templates.map((t) => serializeDoc<ProductTemplate>(t));
+  } catch (error) {
+    console.error("Error fetching templates:", error);
     return [];
   }
 }

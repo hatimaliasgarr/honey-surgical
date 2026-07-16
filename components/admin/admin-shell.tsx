@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Boxes, FolderTree, Inbox, LayoutDashboard, Menu, Tag, Upload, X } from "lucide-react";
+import { BarChart3, Boxes, Copy, FolderTree, Inbox, LayoutDashboard, Menu, Tag, Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { AdminSession } from "@/lib/auth/admin";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ const adminNav = [
   { href: "/admin/products", label: "Products", icon: Boxes },
   { href: "/admin/categories", label: "Categories", icon: FolderTree },
   { href: "/admin/brands", label: "Brands", icon: Tag },
+  { href: "/admin/templates", label: "Templates", icon: Copy },
   { href: "/admin/inquiries", label: "Inquiries", icon: Inbox },
   { href: "/admin/bulk-upload", label: "Bulk Upload", icon: Upload },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 }

@@ -15,15 +15,26 @@ import {
   getAllBrands,
   getAllCategories,
   searchProducts,
+  getAllTemplates,
 } from "@/lib/repositories/catalog-repository";
 import { formatCurrency } from "@/lib/utils";
+import { Search, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
-export default async function AdminProductsPage() {
-  const [session, products, categories, brands] = await Promise.all([
+type PageProps = {
+  searchParams: Promise<{ q?: string }>;
+};
+
+export default async function AdminProductsPage({ searchParams }: PageProps) {
+  const { q } = await searchParams;
+  const [session, products, categories, brands, templates] = await Promise.all([
     requireAdmin(),
-    searchProducts({ sort: "newest", status: "all" }),
+    searchProducts({ query: q, sort: "newest", status: "all" }),
     getAllCategories(),
     getAllBrands(),
+    getAllTemplates(),
   ]);
 
   return (
@@ -37,9 +48,30 @@ export default async function AdminProductsPage() {
             Create, edit, archive, and manage product image uploads.
           </p>
         </div>
-        <ProductForm categories={categories} brands={brands} />
+        <ProductForm categories={categories} brands={brands} templates={templates} />
         <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
-          <h2 className="font-semibold text-lg text-medical-deep">Products</h2>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <h2 className="font-semibold text-lg text-medical-deep">Products</h2>
+            <form method="GET" action="/admin/products" className="flex w-full max-w-sm gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  name="q"
+                  defaultValue={q || ""}
+                  placeholder="Search products..."
+                  className="pl-9 focus-ring"
+                />
+              </div>
+              <Button type="submit">Search</Button>
+              {q && (
+                <Button asChild variant="outline" size="icon">
+                  <Link href="/admin/products" title="Clear search">
+                    <X className="size-4" />
+                  </Link>
+                </Button>
+              )}
+            </form>
+          </div>
           
           {/* Mobile Card List View */}
           <div className="mt-4 grid gap-4 md:hidden">

@@ -83,3 +83,14 @@ export type DashboardMetrics = {
   inquiryTrends: { date: string; count: number }[];
   categoryPopularity: { category: string; views: number }[];
 };
+
+export type ProductTemplate = {
+  id: string;
+  name: string;
+  slug: string;
+  shortDescription: string;
+  description: string;
+  specifications: ProductSpecification[];
+  features: string[];
+  keywords: string[];
+};
